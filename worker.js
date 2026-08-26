@@ -494,6 +494,25 @@ async function handleGeocodeSuggest(request, env) {
   }
 }
 
+async function handleEmailSubscribe(request, env) {
+  try {
+    const body = await request.json();
+    const email = (body.email || '').trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) return jsonResponse({ ok: false, error: 'Email invalide.' }, 200);
+
+    const plan = body.plan || null;
+
+    await env.DB.prepare(
+      'INSERT INTO email_subscribers (email, plan_json, created_at) VALUES (?, ?, ?) ON CONFLICT(email) DO UPDATE SET plan_json = excluded.plan_json'
+    ).bind(email, plan ? JSON.stringify(plan) : null, Math.floor(Date.now() / 1000)).run();
+
+    return jsonResponse({ ok: true });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: 'Erreur serveur.' }, 200);
+  }
+}
+
 async function handleSetAge(request, env) {
   const sessionId = getCookie(request, 'elanrun_session');
   if (!sessionId) return jsonResponse({ ok: false }, 401);
@@ -530,6 +549,7 @@ export default {
     if (url.pathname === '/api/plan/save' && request.method === 'POST') return handlePlanSave(request, env);
     if (url.pathname === '/api/route/generate' && request.method === 'POST') return handleRouteGenerate(request, env);
     if (url.pathname === '/api/geocode/suggest' && request.method === 'GET') return handleGeocodeSuggest(request, env);
+    if (url.pathname === '/api/email/subscribe' && request.method === 'POST') return handleEmailSubscribe(request, env);
 
     return env.ASSETS.fetch(request);
   }

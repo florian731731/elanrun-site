@@ -116,6 +116,47 @@
   function renderResults(plan){
     currentPlan = plan;
     fetch("/api/plan/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(plan) }).catch(function(){});
+
+    const subscribeBtn = document.getElementById('reminderSubscribeBtn');
+    if (subscribeBtn && !subscribeBtn.dataset.bound){
+      subscribeBtn.dataset.bound = '1';
+      subscribeBtn.addEventListener('click', async function(){
+        const emailInput = document.getElementById('reminderEmailInput');
+        const errorEl = document.getElementById('reminderError');
+        const toastEl = document.getElementById('reminderToast');
+        errorEl.style.display = 'none';
+
+        const email = emailInput.value.trim();
+        if (!email){
+          errorEl.textContent = 'Indique ton email.';
+          errorEl.style.display = 'block';
+          return;
+        }
+
+        subscribeBtn.disabled = true;
+        try {
+          const res = await fetch('/api/email/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: email, plan: currentPlan })
+          });
+          const data = await res.json();
+          if (data.ok){
+            toastEl.classList.add('show');
+            emailInput.value = '';
+          } else {
+            errorEl.textContent = data.error || "Un souci est survenu, reessaie.";
+            errorEl.style.display = 'block';
+          }
+        } catch (e){
+          errorEl.textContent = "Erreur de connexion, reessaie.";
+          errorEl.style.display = 'block';
+        } finally {
+          subscribeBtn.disabled = false;
+        }
+      });
+    }
+
     const { meta } = plan;
     const introEl = document.getElementById('resultIntro');
     const subEl = document.getElementById('resultSub');

@@ -190,11 +190,14 @@
           <div class="toast" id="icsToast">Fichier téléchargé — ouvre-le pour l'ajouter à ton calendrier.</div>
         </div>
         <div class="action-card" style="flex:1 1 100%;">
-          <h4>Rappels email chaque semaine <span style="font-family:var(--mono);font-size:0.68rem;color:var(--effort);text-transform:uppercase;">Pro — bientôt</span></h4>
-          <p>Reçois tes séances de la semaine directement par email, sans y penser.</p>
-          <div class="brevo-embed">
-            <iframe width="100%" height="330" src="https://10eb6e2b.sibforms.com/v2/serve/MUIFAEvSEp-9D0GRUyRGq3oJnIz-J6HlUK4DAt5htUyObLFreVkiHxDY2yRaqgBOmUb1cMA2MLIOgfjFTpedW4VLrO58nC1C5WQKnuRRFmY2Edxlc_KayJPAMuOfd7b3Cy5Zua__d-z76KeNR7yuNrD3lt3uUKivM6jN-h7cuxQvGxyoQfIXpB9tbb-fjybRAqBwBLsWxaSsknmWlQ==" frameborder="0" scrolling="auto" allowfullscreen style="display:block;max-width:100%;border-radius:4px;"></iframe>
+          <h4>Rappels email chaque semaine</h4>
+          <p>Reçois ta prochaine séance par email, sans y penser.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+            <input type="email" id="reminderEmailInput" placeholder="ton@email.com" style="flex:1;min-width:200px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;">
+            <button type="button" class="btn btn-primary btn-sm" id="reminderSubscribeBtn">S'inscrire</button>
           </div>
+          <p id="reminderError" style="color:var(--effort);font-size:0.85rem;margin-top:8px;display:none;"></p>
+          <div class="toast" id="reminderToast">Inscription confirmée ! Tu recevras un rappel chaque semaine.</div>
         </div>
         <div class="action-card">
           <h4>Ajustement automatique via Strava <span style="font-family:var(--mono);font-size:0.68rem;color:var(--track);text-transform:uppercase;">Pro — disponible</span></h4>
