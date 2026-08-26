@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Générateur d'itinéraire — Elanrun</title>
-<meta name="description" content="Génère un parcours de course à pied en boucle depuis n'importe quel point de départ, avec les fontaines à eau sur le chemin. Export GPX gratuit.">
+<meta name="description" content="Génère un parcours de course à pied en boucle ou avec tes propres étapes, avec les fontaines à eau sur le chemin. Export GPX gratuit.">
 <link rel="canonical" href="https://elanrun.com/itineraire.html">
 <meta name="theme-color" content="#0F2530">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -20,6 +20,17 @@
   .fountain-item{ display:flex; align-items:center; gap:8px; padding:8px 0; border-top:1px solid var(--line); font-size:0.9rem; }
   .fountain-item:first-child{ border-top:none; }
   .route-stats{ font-family:var(--mono); font-size:0.95rem; margin-top:14px; }
+  .mode-tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .mode-tab{ flex:1; padding:10px; text-align:center; border:1px solid var(--line); border-radius:6px; cursor:pointer; font-size:0.9rem; background:var(--paper); }
+  .mode-tab.active{ background:var(--ink); color:#fff; border-color:var(--ink); }
+  .waypoint-row{ display:flex; gap:8px; margin-bottom:10px; align-items:center; position:relative; }
+  .waypoint-row input{ flex:1; }
+  .remove-wp{ background:none; border:none; color:var(--effort); cursor:pointer; font-size:1.1rem; padding:4px 8px; }
+  .autocomplete-wrap{ position:relative; }
+  .autocomplete-list{ position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--line); border-top:none; border-radius:0 0 6px 6px; max-height:220px; overflow-y:auto; z-index:50; display:none; }
+  .autocomplete-item{ padding:9px 12px; font-size:0.88rem; cursor:pointer; border-top:1px solid var(--line); }
+  .autocomplete-item:first-child{ border-top:none; }
+  .autocomplete-item:hover{ background:var(--paper-dim); }
 </style>
 </head>
 <body>
@@ -43,24 +54,52 @@
   <div class="wrap">
     <div class="eyebrow">Gratuit</div>
     <h1>Générateur d'itinéraire</h1>
-    <p class="sub">Indique un point de départ et une distance, on te propose une boucle réelle avec les points d'eau sur le chemin — à télécharger en GPX pour ta montre.</p>
+    <p class="sub">Boucle automatique par distance, ou construis ton parcours étape par étape — avec les points d'eau sur le chemin. Export GPX inclus.</p>
   </div>
 </section>
 <section>
   <div class="wrap route-card">
     <div class="calc-card">
+
+      <div class="mode-tabs">
+        <div class="mode-tab active" id="tabLoop">Boucle automatique</div>
+        <div class="mode-tab" id="tabWaypoints">Mes étapes</div>
+      </div>
+
       <div class="calc-field" style="margin-bottom:16px;">
-        <label for="addressInput">Point de départ</label>
-        <input type="text" id="addressInput" placeholder="Ex : Place du Capitole, Toulouse">
+        <label for="surfaceSelect">Type de terrain</label>
+        <select id="surfaceSelect">
+          <option value="foot-walking">Route / goudron</option>
+          <option value="foot-hiking">Chemin / sentier</option>
+        </select>
       </div>
-      <button type="button" class="btn btn-ghost btn-sm" id="geoBtn" style="margin-bottom:16px;">📍 Utiliser ma position actuelle</button>
-      <div class="calc-field" style="margin-bottom:20px;">
-        <label for="distanceInput">Distance voulue (km)</label>
-        <input type="number" id="distanceInput" min="2" max="30" value="10">
+
+      <div id="loopMode">
+        <div class="calc-field autocomplete-wrap" style="margin-bottom:16px;">
+          <label for="addressInput">Point de départ</label>
+          <input type="text" id="addressInput" placeholder="Ex : Albertville" autocomplete="off">
+          <div class="autocomplete-list" id="addressInput-list"></div>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="geoBtn" style="margin-bottom:16px;">📍 Utiliser ma position actuelle</button>
+        <div class="calc-field" style="margin-bottom:20px;">
+          <label for="distanceInput">Distance voulue (km)</label>
+          <input type="number" id="distanceInput" min="2" max="30" value="10">
+        </div>
       </div>
+
+      <div id="waypointMode" style="display:none;">
+        <div id="waypointsList"></div>
+        <button type="button" class="btn btn-ghost btn-sm" id="addWaypointBtn" style="margin-bottom:16px;">+ Ajouter une étape</button>
+        <label style="display:flex;align-items:center;gap:8px;font-size:0.9rem;margin-bottom:20px;">
+          <input type="checkbox" id="returnToStartCheck" checked style="width:auto;">
+          Revenir au point de départ
+        </label>
+      </div>
+
       <button type="button" class="btn btn-primary" id="generateBtn">Générer mon parcours</button>
       <p id="routeError" style="color:var(--effort);font-size:0.9rem;margin-top:12px;display:none;"></p>
     </div>
+
     <div id="resultCard" class="calc-card" style="display:none;">
       <h3>Ton parcours</h3>
       <div id="routeMap"></div>
@@ -108,6 +147,95 @@
 <script>
 let currentCoords = null;
 let currentMap = null;
+let currentMode = 'loop';
+let waypointCount = 0;
+
+document.getElementById('tabLoop').addEventListener('click', () => {
+  currentMode = 'loop';
+  document.getElementById('tabLoop').classList.add('active');
+  document.getElementById('tabWaypoints').classList.remove('active');
+  document.getElementById('loopMode').style.display = 'block';
+  document.getElementById('waypointMode').style.display = 'none';
+});
+
+document.getElementById('tabWaypoints').addEventListener('click', () => {
+  currentMode = 'waypoints';
+  document.getElementById('tabWaypoints').classList.add('active');
+  document.getElementById('tabLoop').classList.remove('active');
+  document.getElementById('loopMode').style.display = 'none';
+  document.getElementById('waypointMode').style.display = 'block';
+  if (waypointCount === 0) {
+    addWaypointRow('Point de départ');
+    addWaypointRow('Étape 2');
+  }
+});
+
+function addWaypointRow(placeholder){
+  waypointCount++;
+  const list = document.getElementById('waypointsList');
+  const row = document.createElement('div');
+  row.className = 'waypoint-row';
+  const wrapId = 'wp-wrap-' + waypointCount;
+  row.innerHTML = '<div class="autocomplete-wrap" style="flex:1;" id="' + wrapId + '">' +
+      '<input type="text" class="wp-input" placeholder="' + placeholder + '" autocomplete="off">' +
+      '<div class="autocomplete-list"></div>' +
+    '</div>' +
+    (waypointCount > 2 ? '<button type="button" class="remove-wp">✕</button>' : '');
+  list.appendChild(row);
+  const removeBtn = row.querySelector('.remove-wp');
+  if (removeBtn){
+    removeBtn.addEventListener('click', () => { row.remove(); waypointCount--; });
+  }
+  const wpInput = row.querySelector('.wp-input');
+  const wpList = row.querySelector('.autocomplete-list');
+  attachAutocomplete(wpInput, wpList);
+}
+
+let autocompleteTimer = null;
+function attachAutocomplete(inputEl, listEl){
+  inputEl.addEventListener('input', () => {
+    delete inputEl.dataset.lat;
+    delete inputEl.dataset.lng;
+    const q = inputEl.value.trim();
+    clearTimeout(autocompleteTimer);
+    if (q.length < 3){ listEl.style.display = 'none'; return; }
+    autocompleteTimer = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/geocode/suggest?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        const suggestions = data.suggestions || [];
+        if (!suggestions.length){ listEl.style.display = 'none'; return; }
+        listEl.innerHTML = suggestions.map((s, i) =>
+          '<div class="autocomplete-item" data-i="' + i + '">' + s.label + '</div>'
+        ).join('');
+        listEl.style.display = 'block';
+        listEl.querySelectorAll('.autocomplete-item').forEach((item, i) => {
+          item.addEventListener('click', () => {
+            inputEl.value = suggestions[i].label;
+            inputEl.dataset.lat = suggestions[i].lat;
+            inputEl.dataset.lng = suggestions[i].lng;
+            listEl.style.display = 'none';
+          });
+        });
+      } catch (e) {
+        listEl.style.display = 'none';
+      }
+    }, 400);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!inputEl.contains(e.target) && !listEl.contains(e.target)){
+      listEl.style.display = 'none';
+    }
+  });
+}
+
+attachAutocomplete(document.getElementById('addressInput'), document.getElementById('addressInput-list'));
+
+document.getElementById('addWaypointBtn').addEventListener('click', () => {
+  if (waypointCount >= 8) { alert('Maximum 8 étapes.'); return; }
+  addWaypointRow('Étape ' + (waypointCount + 1));
+});
 
 document.getElementById('geoBtn').addEventListener('click', () => {
   if (!navigator.geolocation) {
@@ -129,20 +257,46 @@ document.getElementById('generateBtn').addEventListener('click', async () => {
   const errorEl = document.getElementById('routeError');
   errorEl.style.display = 'none';
 
-  const distanceKm = document.getElementById('distanceInput').value;
-  const body = { distanceKm };
+  const profile = document.getElementById('surfaceSelect').value;
+  const body = { profile };
 
-  if (window._userLat) {
-    body.lat = window._userLat;
-    body.lng = window._userLng;
+  if (currentMode === 'loop') {
+    const distanceKm = document.getElementById('distanceInput').value;
+    body.distanceKm = distanceKm;
+
+    const addrInput = document.getElementById('addressInput');
+    if (window._userLat) {
+      body.lat = window._userLat;
+      body.lng = window._userLng;
+    } else if (addrInput.dataset.lat) {
+      body.lat = parseFloat(addrInput.dataset.lat);
+      body.lng = parseFloat(addrInput.dataset.lng);
+    } else {
+      const address = addrInput.value.trim();
+      if (!address) {
+        errorEl.textContent = "Indique un point de départ ou utilise ta position.";
+        errorEl.style.display = 'block';
+        return;
+      }
+      body.address = address;
+    }
   } else {
-    const address = document.getElementById('addressInput').value.trim();
-    if (!address) {
-      errorEl.textContent = "Indique un point de départ ou utilise ta position.";
+    const wpInputs = Array.from(document.querySelectorAll('.wp-input'));
+    if (wpInputs.some(i => !i.value.trim())) {
+      errorEl.textContent = "Remplis toutes les étapes ou supprime les lignes vides.";
       errorEl.style.display = 'block';
       return;
     }
-    body.address = address;
+    if (wpInputs.length < 2) {
+      errorEl.textContent = "Ajoute au moins 2 étapes.";
+      errorEl.style.display = 'block';
+      return;
+    }
+    body.waypoints = wpInputs.map(i => {
+      if (i.dataset.lat) return { lat: parseFloat(i.dataset.lat), lng: parseFloat(i.dataset.lng) };
+      return { address: i.value.trim() };
+    });
+    body.returnToStart = document.getElementById('returnToStartCheck').checked;
   }
 
   const btn = document.getElementById('generateBtn');
@@ -188,7 +342,7 @@ function renderResult(data){
   const line = L.polyline(data.coords, { color: '#FF4B33', weight: 4 }).addTo(currentMap);
   currentMap.fitBounds(line.getBounds(), { padding: [20, 20] });
 
-  L.marker(data.coords[0]).addTo(currentMap).bindPopup('Départ / Arrivée');
+  L.marker(data.coords[0]).addTo(currentMap).bindPopup('Départ');
 
   const fountainsList = document.getElementById('fountainsList');
   if (data.fountains && data.fountains.length){

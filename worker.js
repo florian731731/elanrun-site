@@ -314,19 +314,19 @@ async function handleDashboard(request, env) {
   return jsonResponse({ connected: true, age: tokenRow.age || null, maxHr: tokenRow.max_hr || null, planComparison, recentActivities, ...analysis });
 }
 
-async function geocodeAddress(address, orsKey) {
-  const url = `https://api.openrouteservice.org/geocode/search?api_key=${orsKey}&text=${encodeURIComponent(address)}&size=1`;
-  const res = await fetch(url);
+async function geocodeAddress(address) {
+  const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+  const res = await fetch(url, {
+    headers: { 'User-Agent': 'ElanrunApp/1.0 (contact via elanrun.com)' }
+  });
   if (!res.ok) return null;
   const data = await res.json();
-  const feat = data.features && data.features[0];
-  if (!feat) return null;
-  const [lng, lat] = feat.geometry.coordinates;
-  return { lat, lng, label: feat.properties.label };
+  if (!data.length) return null;
+  return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), label: data[0].display_name };
 }
 
-async function generateLoopRoute(lat, lng, distanceKm, orsKey) {
-  const url = `https://api.openrouteservice.org/v2/directions/foot-walking/geojson`;
+async function generateLoopRoute(lat, lng, distanceKm, orsKey, profile) {
+  const url = `https://api.openrouteservice.org/v2/directions/${profile}/geojson`;
   const body = {
     coordinates: [[lng, lat]],
     options: {
@@ -337,6 +337,30 @@ async function generateLoopRoute(lat, lng, distanceKm, orsKey) {
       }
     }
   };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': orsKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const feature = data.features && data.features[0];
+  if (!feature) return null;
+  const coords = feature.geometry.coordinates.map(c => [c[1], c[0]]);
+  const summary = feature.properties.summary;
+  return {
+    coords,
+    distanceKm: Math.round((summary.distance / 1000) * 10) / 10,
+    durationMin: Math.round(summary.duration / 60)
+  };
+}
+
+async function generateWaypointRoute(coordList, orsKey, profile) {
+  const url = `https://api.openrouteservice.org/v2/directions/${profile}/geojson`;
+  const body = { coordinates: coordList };
   const res = await fetch(url, {
     method: 'POST',
     headers: {
@@ -400,10 +424,34 @@ async function findFountainsNearRoute(coords) {
 async function handleRouteGenerate(request, env) {
   try {
     const body = await request.json();
+    const profile = body.profile === 'foot-hiking' ? 'foot-hiking' : 'foot-walking';
+
+    if (Array.isArray(body.waypoints) && body.waypoints.length >= 2) {
+      const coordList = [];
+      for (const wp of body.waypoints) {
+        if (wp.lat && wp.lng) {
+          coordList.push([wp.lng, wp.lat]);
+        } else if (wp.address) {
+          const geo = await geocodeAddress(wp.address);
+          if (!geo) return jsonResponse({ ok: false, error: `Adresse introuvable : ${wp.address}` }, 200);
+          coordList.push([geo.lng, geo.lat]);
+        }
+      }
+      if (body.returnToStart && coordList.length > 1) {
+        coordList.push(coordList[0]);
+      }
+
+      const route = await generateWaypointRoute(coordList, env.ORS_API_KEY, profile);
+      if (!route) return jsonResponse({ ok: false, error: "Impossible de relier ces étapes. Vérifie qu'elles ne sont pas trop éloignées ou inaccessibles à pied." }, 200);
+
+      const fountains = await findFountainsNearRoute(route.coords);
+      return jsonResponse({ ok: true, ...route, fountains, start: { lat: coordList[0][1], lng: coordList[0][0] } });
+    }
+
     let lat = body.lat, lng = body.lng;
 
     if ((!lat || !lng) && body.address) {
-      const geo = await geocodeAddress(body.address, env.ORS_API_KEY);
+      const geo = await geocodeAddress(body.address);
       if (!geo) return jsonResponse({ ok: false, error: 'Adresse introuvable.' }, 200);
       lat = geo.lat; lng = geo.lng;
     }
@@ -412,7 +460,7 @@ async function handleRouteGenerate(request, env) {
 
     const distanceKm = Math.min(Math.max(parseFloat(body.distanceKm) || 10, 2), 30);
 
-    const route = await generateLoopRoute(lat, lng, distanceKm, env.ORS_API_KEY);
+    const route = await generateLoopRoute(lat, lng, distanceKm, env.ORS_API_KEY, profile);
     if (!route) return jsonResponse({ ok: false, error: "Impossible de générer un parcours à cet endroit. Essaie une distance différente ou un autre point de départ." }, 200);
 
     const fountains = await findFountainsNearRoute(route.coords);
@@ -420,6 +468,29 @@ async function handleRouteGenerate(request, env) {
     return jsonResponse({ ok: true, ...route, fountains, start: { lat, lng } });
   } catch (err) {
     return jsonResponse({ ok: false, error: 'Erreur serveur: ' + (err && err.message ? err.message : String(err)) }, 200);
+  }
+}
+
+async function handleGeocodeSuggest(request, env) {
+  const url = new URL(request.url);
+  const q = url.searchParams.get('q') || '';
+  if (q.length < 3) return jsonResponse({ ok: true, suggestions: [] });
+
+  try {
+    const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&countrycodes=fr`;
+    const res = await fetch(nomUrl, {
+      headers: { 'User-Agent': 'ElanrunApp/1.0 (contact via elanrun.com)' }
+    });
+    if (!res.ok) return jsonResponse({ ok: true, suggestions: [] });
+    const data = await res.json();
+    const suggestions = data.map(d => ({
+      label: d.display_name,
+      lat: parseFloat(d.lat),
+      lng: parseFloat(d.lon)
+    }));
+    return jsonResponse({ ok: true, suggestions });
+  } catch (e) {
+    return jsonResponse({ ok: true, suggestions: [] });
   }
 }
 
@@ -458,6 +529,7 @@ export default {
     if (url.pathname === '/api/strava/set-age' && request.method === 'POST') return handleSetAge(request, env);
     if (url.pathname === '/api/plan/save' && request.method === 'POST') return handlePlanSave(request, env);
     if (url.pathname === '/api/route/generate' && request.method === 'POST') return handleRouteGenerate(request, env);
+    if (url.pathname === '/api/geocode/suggest' && request.method === 'GET') return handleGeocodeSuggest(request, env);
 
     return env.ASSETS.fetch(request);
   }
