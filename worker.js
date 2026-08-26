@@ -314,6 +314,115 @@ async function handleDashboard(request, env) {
   return jsonResponse({ connected: true, age: tokenRow.age || null, maxHr: tokenRow.max_hr || null, planComparison, recentActivities, ...analysis });
 }
 
+async function geocodeAddress(address, orsKey) {
+  const url = `https://api.openrouteservice.org/geocode/search?api_key=${orsKey}&text=${encodeURIComponent(address)}&size=1`;
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  const data = await res.json();
+  const feat = data.features && data.features[0];
+  if (!feat) return null;
+  const [lng, lat] = feat.geometry.coordinates;
+  return { lat, lng, label: feat.properties.label };
+}
+
+async function generateLoopRoute(lat, lng, distanceKm, orsKey) {
+  const url = `https://api.openrouteservice.org/v2/directions/foot-walking/geojson`;
+  const body = {
+    coordinates: [[lng, lat]],
+    options: {
+      round_trip: {
+        length: Math.round(distanceKm * 1000),
+        points: 4,
+        seed: Math.floor(Math.random() * 10000)
+      }
+    }
+  };
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Authorization': orsKey,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  const feature = data.features && data.features[0];
+  if (!feature) return null;
+  const coords = feature.geometry.coordinates.map(c => [c[1], c[0]]);
+  const summary = feature.properties.summary;
+  return {
+    coords,
+    distanceKm: Math.round((summary.distance / 1000) * 10) / 10,
+    durationMin: Math.round(summary.duration / 60)
+  };
+}
+
+function haversine(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+async function findFountainsNearRoute(coords) {
+  if (!coords.length) return [];
+  let minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
+  coords.forEach(([lat, lng]) => {
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+    if (lng < minLng) minLng = lng;
+    if (lng > maxLng) maxLng = lng;
+  });
+  const pad = 0.003;
+  const bbox = `${minLat - pad},${minLng - pad},${maxLat + pad},${maxLng + pad}`;
+  const query = `[out:json][timeout:15];node["amenity"="drinking_water"](${bbox});out body;`;
+
+  try {
+    const res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query),
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const elements = data.elements || [];
+    const sampled = coords.filter((_, i) => i % 5 === 0);
+    return elements
+      .filter(el => sampled.some(([lat, lng]) => haversine(lat, lng, el.lat, el.lon) < 150))
+      .map(el => ({ lat: el.lat, lng: el.lon, name: (el.tags && el.tags.name) || 'Fontaine à eau' }));
+  } catch (e) {
+    return [];
+  }
+}
+
+async function handleRouteGenerate(request, env) {
+  try {
+    const body = await request.json();
+    let lat = body.lat, lng = body.lng;
+
+    if ((!lat || !lng) && body.address) {
+      const geo = await geocodeAddress(body.address, env.ORS_API_KEY);
+      if (!geo) return jsonResponse({ ok: false, error: 'Adresse introuvable.' }, 200);
+      lat = geo.lat; lng = geo.lng;
+    }
+
+    if (!lat || !lng) return jsonResponse({ ok: false, error: 'Aucun point de départ fourni.' }, 200);
+
+    const distanceKm = Math.min(Math.max(parseFloat(body.distanceKm) || 10, 2), 30);
+
+    const route = await generateLoopRoute(lat, lng, distanceKm, env.ORS_API_KEY);
+    if (!route) return jsonResponse({ ok: false, error: "Impossible de générer un parcours à cet endroit. Essaie une distance différente ou un autre point de départ." }, 200);
+
+    const fountains = await findFountainsNearRoute(route.coords);
+
+    return jsonResponse({ ok: true, ...route, fountains, start: { lat, lng } });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: 'Erreur serveur: ' + (err && err.message ? err.message : String(err)) }, 200);
+  }
+}
+
 async function handleSetAge(request, env) {
   const sessionId = getCookie(request, 'elanrun_session');
   if (!sessionId) return jsonResponse({ ok: false }, 401);
@@ -348,6 +457,7 @@ export default {
     if (url.pathname === '/api/strava/dashboard') return handleDashboard(request, env);
     if (url.pathname === '/api/strava/set-age' && request.method === 'POST') return handleSetAge(request, env);
     if (url.pathname === '/api/plan/save' && request.method === 'POST') return handlePlanSave(request, env);
+    if (url.pathname === '/api/route/generate' && request.method === 'POST') return handleRouteGenerate(request, env);
 
     return env.ASSETS.fetch(request);
   }
