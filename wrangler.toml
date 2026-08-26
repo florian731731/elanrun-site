@@ -1,5 +1,16 @@
 name = "delicate-lake-3257"
+main = "worker.js"
 compatibility_date = "2026-08-26"
 
 [assets]
 directory = "./"
+binding = "ASSETS"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "elanrun-db"
+database_id = "21628cfa-944c-442f-83e1-bbe28f54cff9"
+
+[vars]
+STRAVA_CLIENT_ID = "274741"
+STRAVA_REDIRECT_URI = "https://elanrun.com/auth/strava/callback"

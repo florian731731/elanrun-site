@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mon suivi Strava — Elanrun</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://elanrun.com/strava.html">
+<meta name="theme-color" content="#0F2530">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%230F2530'/%3E%3Ccircle cx='30' cy='30' r='9' fill='%23FF4B33'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .strava-card{ max-width:640px; margin:0 auto; }
+  .week-row{ display:flex; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line); font-family:var(--mono); font-size:0.9rem; }
+  .week-row:first-child{ border-top:none; }
+  .insight-box{ background:var(--paper-dim); border-left:3px solid var(--effort); padding:16px 18px; margin:16px 0; border-radius:4px; font-size:0.95rem; }
+  .connect-box{ text-align:center; padding:60px 20px; }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
+    <nav class="nav-links">
+      <a href="zone-2.html">Zone 2</a>
+      <a href="relever-un-defi.html">Relève un défi</a>
+      <a href="debuter-course-a-pied.html">Guide débutant</a>
+      <a href="comment-ca-marche.html">Comment ça marche</a>
+      <a href="faq.html">FAQ</a>
+      <a href="plan.html">Créer mon plan</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="plan.html" class="btn btn-primary btn-sm">Créer mon plan</a>
+      <button class="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="eyebrow">Elanrun Pro</div>
+    <h1>Mon suivi Strava</h1>
+  </div>
+</section>
+
+<section>
+  <div class="wrap strava-card">
+
+    <div id="loadingState" class="connect-box">
+      <p>Chargement...</p>
+    </div>
+
+    <div id="connectState" class="connect-box" style="display:none;">
+      <h3 style="text-transform:none;font-family:var(--body);font-weight:800;font-size:1.4rem;margin-bottom:14px;">Connecte ton compte Strava</h3>
+      <p style="margin-bottom:28px;max-width:44ch;margin-left:auto;margin-right:auto;">On lit uniquement tes activités pour analyser ton entraînement. On ne publie et ne modifie jamais rien sur ton compte.</p>
+      <a href="/auth/strava/connect" class="btn btn-primary">Connecter Strava</a>
+      <p style="margin-top:24px;font-size:0.85rem;color:var(--slate-light);">Note : pendant la phase de test, seul le compte Strava du créateur du site peut se connecter.</p>
+    </div>
+
+    <div id="ageState" style="display:none;">
+      <div class="calc-card">
+        <h3>Une dernière info</h3>
+        <p class="sub">Ton âge nous permet d'estimer ta zone 2 et d'analyser tes séances plus précisément.</p>
+        <div class="calc-field" style="margin-bottom:20px;">
+          <label for="ageInput">Ton âge</label>
+          <input type="number" id="ageInput" min="10" max="100" placeholder="Ex : 34">
+        </div>
+        <button type="button" class="btn btn-primary" id="ageSubmitBtn">Valider</button>
+      </div>
+    </div>
+
+    <div id="dashboardState" style="display:none;">
+      <div class="result-summary" style="margin-bottom:24px;">
+        <div class="eyebrow">Connecté</div>
+        <h2 id="dashTitle">Ton activité récente</h2>
+        <p id="dashSub"></p>
+      </div>
+
+      <div id="insightsContainer"></div>
+
+      <div class="calc-card">
+        <h3>Volume hebdomadaire (8 dernières semaines)</h3>
+        <div id="weeksList"></div>
+      </div>
+
+      <div class="center mt-lg">
+        <a href="/auth/strava/disconnect" class="btn btn-ghost btn-sm">Déconnecter Strava</a>
+      </div>
+    </div>
+
+    <div id="errorState" class="connect-box" style="display:none;">
+      <p>Un souci est survenu pendant la connexion à Strava. Réessaie dans un instant.</p>
+      <a href="/auth/strava/connect" class="btn btn-primary" style="margin-top:20px;">Réessayer</a>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
+      </div>
+      <div class="footer-links">
+        <div>
+          <h4>Outil</h4>
+          <ul>
+            <li><a href="plan.html">Créer mon plan</a></li>
+            <li><a href="zone-2.html">Calculer ma zone 2</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Informations</h4>
+          <ul>
+            <li><a href="a-propos.html">À propos</a></li>
+            <li><a href="mentions-legales.html">Mentions légales</a></li>
+            <li><a href="confidentialite.html">Confidentialité</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Elanrun</span>
+      <span>Fait avec Cloudflare — Savoie, France 🏃</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script>
+(async function(){
+  const params = new URLSearchParams(location.search);
+  if (params.get('error')){
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/strava/dashboard');
+    const data = await res.json();
+    document.getElementById('loadingState').style.display = 'none';
+
+    if (!data.connected){
+      document.getElementById('connectState').style.display = 'block';
+      return;
+    }
+
+    if (!data.age){
+      document.getElementById('ageState').style.display = 'block';
+      document.getElementById('ageSubmitBtn').addEventListener('click', async () => {
+        const age = document.getElementById('ageInput').value;
+        await fetch('/api/strava/set-age', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ age })
+        });
+        location.reload();
+      });
+      return;
+    }
+
+    renderDashboard(data);
+  } catch(e){
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+  }
+
+  function renderDashboard(data){
+    document.getElementById('dashboardState').style.display = 'block';
+    document.getElementById('dashSub').textContent = `${data.totalRuns} sorties analysées sur la période récente.`;
+
+    const insights = document.getElementById('insightsContainer');
+    insights.innerHTML = '';
+    if (data.volumeAlert){
+      const box = document.createElement('div');
+      box.className = 'insight-box';
+      box.textContent = data.volumeAlert;
+      insights.appendChild(box);
+    }
+    if (data.zone2Insight){
+      const box = document.createElement('div');
+      box.className = 'insight-box';
+      box.textContent = data.zone2Insight;
+      insights.appendChild(box);
+    }
+    if (!data.volumeAlert && !data.zone2Insight){
+      const box = document.createElement('div');
+      box.className = 'insight-box';
+      box.textContent = "Continue comme ça ! Reviens régulièrement pour voir tes analyses évoluer.";
+      insights.appendChild(box);
+    }
+
+    const weeksList = document.getElementById('weeksList');
+    weeksList.innerHTML = (data.weeklyData || []).slice().reverse().map(w => `
+      <div class="week-row">
+        <span>${w.week}</span>
+        <span>${w.distanceKm} km · ${w.runs} sortie${w.runs > 1 ? 's' : ''}${w.avgHr ? ' · ' + w.avgHr + ' bpm moy.' : ''}</span>
+      </div>
+    `).join('') || '<p style="color:var(--slate-light);font-size:0.9rem;">Pas encore assez de données.</p>';
+  }
+})();
+</script>
+</body>
+</html>
