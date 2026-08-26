@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dessine ton parcours (GPS Art) — Elanrun</title>
+<meta name="description" content="Dessine une forme sur la carte et transforme-la en vrai parcours de course qui suit les routes réelles. Export GPX gratuit pour ta montre.">
+<link rel="canonical" href="https://elanrun.com/dessin.html">
+<meta name="theme-color" content="#0F2530">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%230F2530'/%3E%3Ccircle cx='30' cy='30' r='9' fill='%23FF4B33'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  .draw-card{ max-width:760px; margin:0 auto; }
+  #drawMap{ height:460px; border-radius:8px; margin-top:16px; background:var(--paper-dim); cursor:crosshair; }
+  .draw-toolbar{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:16px; }
+  .draw-toolbar select{ padding:8px 10px; }
+  .point-counter{ font-family:var(--mono); font-size:0.85rem; color:var(--slate-light); margin-top:10px; }
+  .autocomplete-wrap{ position:relative; flex:1; min-width:200px; }
+  .autocomplete-list{ position:absolute; top:100%; left:0; right:0; background:#fff; border:1px solid var(--line); border-top:none; border-radius:0 0 6px 6px; max-height:220px; overflow-y:auto; z-index:50; display:none; }
+  .autocomplete-item{ padding:9px 12px; font-size:0.88rem; cursor:pointer; border-top:1px solid var(--line); }
+  .autocomplete-item:first-child{ border-top:none; }
+  .autocomplete-item:hover{ background:var(--paper-dim); }
+  .route-stats{ font-family:var(--mono); font-size:0.95rem; margin-top:14px; }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
+    <nav class="nav-links">
+      <a href="zone-2.html">Zone 2</a>
+      <a href="itineraire.html">Itinéraire</a>
+      <a href="dessin.html">Dessine ton parcours</a>
+      <a href="plan.html">Créer mon plan</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="plan.html" class="btn btn-primary btn-sm">Créer mon plan</a>
+      <button class="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="eyebrow">Gratuit · GPS Art</div>
+    <h1>Dessine ton parcours</h1>
+    <p class="sub">Clique sur la carte pour tracer une forme — cœur, prénom, animal, ce que tu veux. On transforme ton dessin en vrai parcours qui suit les routes réelles.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap draw-card">
+    <div class="calc-card">
+
+      <div class="calc-field autocomplete-wrap">
+        <label for="locationSearch">Se placer sur une zone</label>
+        <input type="text" id="locationSearch" placeholder="Ex : Chambéry" autocomplete="off">
+        <div class="autocomplete-list" id="locationSearch-list"></div>
+      </div>
+
+      <div id="drawMap"></div>
+      <div class="point-counter" id="pointCounter">0 point placé — clique sur la carte pour commencer ton dessin.</div>
+
+      <div class="draw-toolbar">
+        <select id="surfaceSelect">
+          <option value="foot-walking">Route / goudron</option>
+          <option value="foot-hiking">Chemin / sentier</option>
+        </select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.9rem;">
+          <input type="checkbox" id="closeLoopCheck" checked style="width:auto;">
+          Fermer la boucle
+        </label>
+        <button type="button" class="btn btn-ghost btn-sm" id="undoBtn">Annuler dernier point</button>
+        <button type="button" class="btn btn-ghost btn-sm" id="clearBtn">Tout effacer</button>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="generateBtn" style="margin-top:16px;">Transformer en parcours</button>
+      <p id="drawError" style="color:var(--effort);font-size:0.9rem;margin-top:12px;display:none;"></p>
+    </div>
+
+    <div id="resultCard" class="calc-card" style="display:none;">
+      <h3>Ton parcours</h3>
+      <div class="route-stats" id="routeStats"></div>
+      <button type="button" class="btn btn-primary btn-sm" id="downloadGpxBtn" style="margin-top:12px;">Télécharger en GPX</button>
+    </div>
+
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
+      </div>
+      <div class="footer-links">
+        <div>
+          <h4>Outil</h4>
+          <ul>
+            <li><a href="plan.html">Créer mon plan</a></li>
+            <li><a href="zone-2.html">Calculer ma zone 2</a></li>
+            <li><a href="itineraire.html">Générateur d'itinéraire</a></li>
+            <li><a href="dessin.html">Dessine ton parcours</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Informations</h4>
+          <ul>
+            <li><a href="a-propos.html">À propos</a></li>
+            <li><a href="mentions-legales.html">Mentions légales</a></li>
+            <li><a href="confidentialite.html">Confidentialité</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Elanrun</span>
+      <span>Fait avec Cloudflare — Savoie, France 🏃</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+<script>
+const map = L.map('drawMap').setView([45.5646, 5.9178], 13);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 18
+}).addTo(map);
+
+let points = [];
+let markers = [];
+let previewLine = null;
+let resultLine = null;
+let resultCoords = null;
+
+navigator.geolocation && navigator.geolocation.getCurrentPosition((pos) => {
+  if (points.length === 0) map.setView([pos.coords.latitude, pos.coords.longitude], 14);
+});
+
+function updateCounter(){
+  const el = document.getElementById('pointCounter');
+  el.textContent = points.length + ' point' + (points.length > 1 ? 's' : '') + ' placé' + (points.length > 1 ? 's' : '') + (points.length === 0 ? ' — clique sur la carte pour commencer ton dessin.' : '');
+}
+
+function redrawPreview(){
+  if (previewLine) { map.removeLayer(previewLine); previewLine = null; }
+  if (points.length >= 2){
+    previewLine = L.polyline(points, { color: '#999', weight: 2, dashArray: '6,6' }).addTo(map);
+  }
+}
+
+map.on('click', (e) => {
+  if (points.length >= 30){ alert('Maximum 30 points pour un dessin.'); return; }
+  points.push([e.latlng.lat, e.latlng.lng]);
+  const marker = L.circleMarker([e.latlng.lat, e.latlng.lng], { radius: 5, color: '#FF4B33', fillColor: '#FF4B33', fillOpacity: 1 }).addTo(map);
+  markers.push(marker);
+  redrawPreview();
+  updateCounter();
+});
+
+document.getElementById('undoBtn').addEventListener('click', () => {
+  if (!points.length) return;
+  points.pop();
+  const m = markers.pop();
+  if (m) map.removeLayer(m);
+  redrawPreview();
+  updateCounter();
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  points = [];
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  redrawPreview();
+  updateCounter();
+  document.getElementById('resultCard').style.display = 'none';
+});
+
+let searchTimer = null;
+const searchInput = document.getElementById('locationSearch');
+const searchList = document.getElementById('locationSearch-list');
+searchInput.addEventListener('input', () => {
+  const q = searchInput.value.trim();
+  clearTimeout(searchTimer);
+  if (q.length < 3){ searchList.style.display = 'none'; return; }
+  searchTimer = setTimeout(async () => {
+    try {
+      const res = await fetch('/api/geocode/suggest?q=' + encodeURIComponent(q));
+      const data = await res.json();
+      const suggestions = data.suggestions || [];
+      if (!suggestions.length){ searchList.style.display = 'none'; return; }
+      searchList.innerHTML = suggestions.map((s, i) =>
+        '<div class="autocomplete-item" data-i="' + i + '">' + s.label + '</div>'
+      ).join('');
+      searchList.style.display = 'block';
+      searchList.querySelectorAll('.autocomplete-item').forEach((item, i) => {
+        item.addEventListener('click', () => {
+          map.setView([suggestions[i].lat, suggestions[i].lng], 14);
+          searchInput.value = suggestions[i].label;
+          searchList.style.display = 'none';
+        });
+      });
+    } catch (e) {
+      searchList.style.display = 'none';
+    }
+  }, 400);
+});
+document.addEventListener('click', (e) => {
+  if (!searchInput.contains(e.target) && !searchList.contains(e.target)) searchList.style.display = 'none';
+});
+
+document.getElementById('generateBtn').addEventListener('click', async () => {
+  const errorEl = document.getElementById('drawError');
+  errorEl.style.display = 'none';
+
+  if (points.length < 2){
+    errorEl.textContent = "Place au moins 2 points sur la carte.";
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const profile = document.getElementById('surfaceSelect').value;
+  const returnToStart = document.getElementById('closeLoopCheck').checked;
+
+  const btn = document.getElementById('generateBtn');
+  btn.disabled = true;
+  btn.textContent = 'Génération en cours...';
+
+  try {
+    const res = await fetch('/api/route/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        waypoints: points.map(p => ({ lat: p[0], lng: p[1] })),
+        returnToStart,
+        profile
+      })
+    });
+    const data = await res.json();
+
+    if (!data.ok) {
+      errorEl.textContent = data.error || "Un souci est survenu, réessaie.";
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    resultCoords = data.coords;
+    if (resultLine) map.removeLayer(resultLine);
+    resultLine = L.polyline(data.coords, { color: '#FF4B33', weight: 4 }).addTo(map);
+    map.fitBounds(resultLine.getBounds(), { padding: [20, 20] });
+
+    document.getElementById('resultCard').style.display = 'block';
+    document.getElementById('routeStats').textContent = data.distanceKm + ' km · environ ' + data.durationMin + ' min de course.';
+  } catch (e) {
+    errorEl.textContent = "Erreur de connexion, réessaie dans un instant.";
+    errorEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Transformer en parcours';
+  }
+});
+
+document.getElementById('downloadGpxBtn').addEventListener('click', () => {
+  if (!resultCoords) return;
+  let gpx = '<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="Elanrun" xmlns="http://www.topografix.com/GPX/1/1">\n<trk><name>Dessin Elanrun</name><trkseg>\n';
+  resultCoords.forEach(([lat, lng]) => {
+    gpx += '<trkpt lat="' + lat + '" lon="' + lng + '"></trkpt>\n';
+  });
+  gpx += '</trkseg></trk></gpx>';
+
+  const blob = new Blob([gpx], { type: 'application/gpx+xml' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'dessin-elanrun.gpx';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+</script>
+</body>
+</html>
