@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer mon plan — Elanrun</title>
+<meta name="description" content="Génère ton plan d'entraînement course à pied personnalisé, gratuitement, sans compte.">
+<link rel="canonical" href="https://elanrun.com/plan.html">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://elanrun.com/plan.html">
+<meta property="og:title" content="Créer mon plan — Elanrun">
+<meta property="og:description" content="Génère ton plan d'entraînement course à pied personnalisé, gratuitement, sans compte.">
+<meta property="og:locale" content="fr_FR">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%230F2530'/%3E%3Ccircle cx='30' cy='30' r='9' fill='%23FF4B33'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght;500;600;700;800&family=JetBrains+Mono:wght;500;600&display=swap">
+<meta name="theme-color" content="#0F2530">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
+    <nav class="nav-links">
+      <a href="zone-2.html">Zone 2</a>
+      <a href="relever-un-defi.html">Relève un défi</a>
+      <a href="comment-ca-marche.html">Comment ça marche</a>
+      <a href="faq.html">FAQ</a>
+      <a href="plan.html">Créer mon plan</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="plan.html" class="btn btn-primary btn-sm">Créer mon plan</a>
+      <button class="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<main class="builder">
+  <div class="wrap">
+
+    <!-- ===================== FORMULAIRE ===================== -->
+    <form id="planForm" novalidate>
+
+      <div class="progress-rail" id="progressRail">
+        <div class="seg"><i></i></div>
+        <div class="seg"><i></i></div>
+        <div class="seg"><i></i></div>
+        <div class="seg"><i></i></div>
+      </div>
+      <div class="progress-label" id="progressLabel">Étape 1 / 4 — Objectif</div>
+
+      <!-- Étape 1 : Objectif -->
+      <div class="step active" data-step="1">
+        <h2>Quel est ton objectif ?</h2>
+        <p class="step-sub">Choisis la distance que tu prépares.</p>
+
+        <div class="field">
+          <label class="field-label">Distance</label>
+          <div class="option-grid cols-4" data-group="distance">
+            <button type="button" class="option-card" data-value="5k"><strong>5 km</strong><span>Premier objectif idéal</span></button>
+            <button type="button" class="option-card" data-value="10k"><strong>10 km</strong><span>Le grand classique</span></button>
+            <button type="button" class="option-card" data-value="semi"><strong>Semi</strong><span>21,1 km</span></button>
+            <button type="button" class="option-card" data-value="marathon"><strong>Marathon</strong><span>42,2 km</span></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="raceDate">As-tu une date de course ?</label>
+          <input type="date" id="raceDate" name="raceDate">
+          <p class="hint">Laisse vide si tu veux juste progresser sans course précise — on te construira un plan de 8 semaines.</p>
+        </div>
+
+        <div class="step-nav">
+          <span></span>
+          <button type="button" class="btn btn-primary" data-next>Continuer</button>
+        </div>
+      </div>
+
+      <!-- Étape 2 : Niveau -->
+      <div class="step" data-step="2">
+        <h2>Où en es-tu aujourd'hui ?</h2>
+        <p class="step-sub">Ça nous permet de calibrer les allures et le volume de départ.</p>
+
+        <div class="field">
+          <label class="field-label">Ton niveau actuel</label>
+          <div class="option-grid" data-group="level">
+            <button type="button" class="option-card" data-value="debutant"><strong>Débutant total</strong><span>Je ne cours pas encore régulièrement</span></button>
+            <button type="button" class="option-card" data-value="reprise"><strong>Reprise</strong><span>J'ai couru par le passé, j'arrête et je reprends</span></button>
+            <button type="button" class="option-card" data-value="regulier"><strong>Coureur régulier</strong><span>Je cours déjà 2-3 fois par semaine</span></button>
+            <button type="button" class="option-card" data-value="confirme"><strong>Confirmé</strong><span>Je fais déjà des courses régulièrement</span></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label">Ta meilleure performance récente <span style="font-weight:400;color:var(--slate-light);">(optionnel, améliore la précision des allures)</span></label>
+          <div class="row2">
+            <div>
+              <select id="recentPerfDist" name="recentPerfDist">
+                <option value="">Distance</option>
+                <option value="5">5 km</option>
+                <option value="10">10 km</option>
+                <option value="21.1">Semi (21,1 km)</option>
+                <option value="42.2">Marathon (42,2 km)</option>
+              </select>
+            </div>
+            <div>
+              <input type="text" id="recentPerfTime" name="recentPerfTime" placeholder="Temps (ex : 32:00)">
+            </div>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button type="button" class="btn btn-ghost" data-prev>Retour</button>
+          <button type="button" class="btn btn-primary" data-next>Continuer</button>
+        </div>
+      </div>
+
+      <!-- Étape 3 : Disponibilité -->
+      <div class="step" data-step="3">
+        <h2>De combien de temps disposes-tu ?</h2>
+        <p class="step-sub">On répartit intelligemment l'effort selon ton emploi du temps réel.</p>
+
+        <div class="field">
+          <label class="field-label">Séances par semaine</label>
+          <div class="option-grid cols-4" data-group="sessionsPerWeek">
+            <button type="button" class="option-card" data-value="2"><strong>2</strong></button>
+            <button type="button" class="option-card" data-value="3"><strong>3</strong></button>
+            <button type="button" class="option-card" data-value="4"><strong>4</strong></button>
+            <button type="button" class="option-card" data-value="5"><strong>5+</strong></button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field-label" for="sessionMinutes">Temps disponible par séance</label>
+          <select id="sessionMinutes" name="sessionMinutes">
+            <option value="30">Environ 30 minutes</option>
+            <option value="45" selected>Environ 45 minutes</option>
+            <option value="60">Environ 1 heure</option>
+            <option value="90">1h30 ou plus</option>
+          </select>
+        </div>
+
+        <div class="step-nav">
+          <button type="button" class="btn btn-ghost" data-prev>Retour</button>
+          <button type="button" class="btn btn-primary" data-next>Continuer</button>
+        </div>
+      </div>
+
+      <!-- Étape 4 : Contraintes -->
+      <div class="step" data-step="4">
+        <h2>Dernier point avant ton plan</h2>
+        <p class="step-sub">Pour éviter de te blesser en construisant le programme.</p>
+
+        <div class="field">
+          <label class="field-label">Douleurs ou blessures actuelles <span style="font-weight:400;color:var(--slate-light);">(optionnel)</span></label>
+          <div class="chip-group" data-group="injuries" data-multi="true">
+            <button type="button" class="chip" data-value="genoux">Genoux</button>
+            <button type="button" class="chip" data-value="chevilles">Chevilles</button>
+            <button type="button" class="chip" data-value="dos">Dos</button>
+            <button type="button" class="chip" data-value="aucune">Aucune</button>
+          </div>
+          <p class="hint">En cas de douleur qui persiste, consulte un professionnel de santé avant de démarrer un programme.</p>
+        </div>
+
+        <div class="step-nav">
+          <button type="button" class="btn btn-ghost" data-prev>Retour</button>
+          <button type="submit" class="btn btn-primary" id="generateBtn">Générer mon plan</button>
+        </div>
+      </div>
+
+    </form>
+
+    <!-- ===================== RÉSULTATS ===================== -->
+    <div class="results" id="results">
+      <div class="result-summary">
+        <div class="eyebrow">Ton plan est prêt</div>
+        <h2 id="resultIntro">—</h2>
+        <p id="resultSub">—</p>
+        <div class="result-stats" id="resultStats"></div>
+      </div>
+
+      <p class="hint" style="margin-bottom:16px;">Ton plan ci-dessous est complet et déjà utilisable tel quel — rien n'y manque. Les options suivantes ajoutent de l'automatisation, en plus.</p>
+      <div class="result-actions">
+        <div class="action-card">
+          <h4>Ajouter à mon agenda</h4>
+          <p>Importe toutes tes séances dans Google Calendar, Apple Calendar ou Outlook, avec les bonnes dates.</p>
+          <button type="button" class="btn btn-primary btn-sm" id="icsBtn">Télécharger (.ics)</button>
+          <div class="toast" id="icsToast">Fichier téléchargé — ouvre-le pour l'ajouter à ton calendrier.</div>
+        </div>
+        <div class="action-card" style="flex:1 1 100%;">
+          <h4>Rappels email chaque semaine <span style="font-family:var(--mono);font-size:0.68rem;color:var(--effort);text-transform:uppercase;">Pro — bientôt</span></h4>
+          <p>Reçois tes séances de la semaine directement par email, sans y penser.</p>
+          <div class="brevo-embed">
+            <iframe width="100%" height="330" src="https://10eb6e2b.sibforms.com/v2/serve/MUIFAEvSEp-9D0GRUyRGq3oJnIz-J6HlUK4DAt5htUyObLFreVkiHxDY2yRaqgBOmUb1cMA2MLIOgfjFTpedW4VLrO58nC1C5WQKnuRRFmY2Edxlc_KayJPAMuOfd7b3Cy5Zua__d-z76KeNR7yuNrD3lt3uUKivM6jN-h7cuxQvGxyoQfIXpB9tbb-fjybRAqBwBLsWxaSsknmWlQ==" frameborder="0" scrolling="auto" allowfullscreen style="display:block;max-width:100%;border-radius:4px;"></iframe>
+          </div>
+        </div>
+        <div class="action-card">
+          <h4>Ajustement automatique via Strava <span style="font-family:var(--mono);font-size:0.68rem;color:var(--effort);text-transform:uppercase;">Pro — bientôt</span></h4>
+          <p>Connecte Strava pour que ton plan s'adapte à tes séances réelles.</p>
+          <button type="button" class="btn btn-ghost btn-sm" id="stravaBtn">Être prévenu</button>
+          <div class="toast" id="stravaToast">Merci ! On t'écrit dès que c'est prêt.</div>
+        </div>
+      </div>
+
+      <div id="weeksContainer"></div>
+
+      <p class="disclaimer">Ce plan est généré automatiquement à titre indicatif à partir des informations que tu as fournies. Il ne remplace pas l'avis d'un professionnel de santé ou d'un coach diplômé. Adapte toujours les séances à ton ressenti, et consulte un médecin avant de démarrer un nouveau programme sportif, en particulier en cas de douleur, de blessure récente ou de longue interruption d'activité physique.</p>
+
+      <div class="center mt-lg">
+        <button type="button" class="btn btn-ghost" id="restartBtn">Refaire le questionnaire</button>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
+        <p style="margin-top:14px; max-width:32ch; color:var(--slate-light); font-size:0.92rem;">Des plans d'entraînement course à pied gratuits et personnalisés, sans inscription.</p>
+      </div>
+      <div class="footer-links">
+        <div>
+          <h4>Outil</h4>
+          <ul>
+            <li><a href="plan.html">Créer mon plan</a></li>
+            <li><a href="zone-2.html">Calculer ma zone 2</a></li>
+            <li><a href="relever-un-defi.html">Relève un défi</a></li>
+            <li><a href="debuter-course-a-pied.html">Guide débutant</a></li>
+            <li><a href="preparer-un-10km.html">Préparer un 10 km</a></li>
+            <li><a href="essoufflement-course-a-pied.html">Éviter l'essoufflement</a></li>
+            <li><a href="points-de-cote.html">Éviter les points de côté</a></li>
+            <li><a href="courir-apres-50-ans.html">Courir après 50 ans</a></li>
+            <li><a href="courir-en-surpoids.html">Courir en surpoids</a></li>
+            <li><a href="comment-ca-marche.html">Comment ça marche</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Informations</h4>
+          <ul>
+            <li><a href="a-propos.html">À propos</a></li>
+            <li><a href="mentions-legales.html">Mentions légales</a></li>
+            <li><a href="confidentialite.html">Confidentialité</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Elanrun</span>
+      <span>Fait avec Cloudflare — Savoie, France</span>
+    </div>
+  </div>
+</footer>
+
+<script src="js/plan-generator.js"></script>
+<script src="js/ics-export.js"></script>
+<script src="js/plan-form.js"></script>
+</body>
+</html>

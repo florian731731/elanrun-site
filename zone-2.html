@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zone 2 : calcule ta fréquence cardiaque d'endurance fondamentale — Elanrun</title>
+<meta name="description" content="Qu'est-ce que la zone 2 (EF) en course à pied, pourquoi tout le monde en parle, et comment calculer précisément ta fourchette de fréquence cardiaque.">
+<link rel="canonical" href="https://elanrun.com/zone-2.html">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://elanrun.com/zone-2.html">
+<meta property="og:title" content="Zone 2 : calcule ta fréquence cardiaque d'endurance fondamentale">
+<meta property="og:description" content="Qu'est-ce que la zone 2, et comment calculer ta fourchette de fréquence cardiaque précise.">
+<meta property="og:locale" content="fr_FR">
+<meta name="theme-color" content="#0F2530">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%230F2530'/%3E%3Ccircle cx='30' cy='30' r='9' fill='%23FF4B33'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Zone 2 : calcule ta fréquence cardiaque d'endurance fondamentale",
+  "description": "Qu'est-ce que la zone 2, et comment calculer ta fourchette de fréquence cardiaque précise.",
+  "author": { "@type": "Organization", "name": "Elanrun" },
+  "publisher": { "@type": "Organization", "name": "Elanrun" },
+  "mainEntityOfPage": "https://elanrun.com/zone-2.html",
+  "inLanguage": "fr-FR"
+}
+</script>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
+    <nav class="nav-links">
+      <a href="zone-2.html">Zone 2</a>
+      <a href="relever-un-defi.html">Relève un défi</a>
+      <a href="debuter-course-a-pied.html">Guide débutant</a>
+      <a href="comment-ca-marche.html">Comment ça marche</a>
+      <a href="faq.html">FAQ</a>
+      <a href="plan.html">Créer mon plan</a>
+    </nav>
+    <div class="nav-cta">
+      <a href="plan.html" class="btn btn-primary btn-sm">Créer mon plan</a>
+      <button class="burger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<section class="page-hero">
+  <div class="wrap">
+    <div class="eyebrow">Endurance fondamentale</div>
+    <h1>Zone 2 : calcule ta<br>fréquence cardiaque cible</h1>
+  </div>
+</section>
+
+<section>
+  <div class="wrap prose">
+    <p>Impossible de passer à côté : la "zone 2" est devenue l'un des sujets les plus discutés en course à pied ces dernières années, popularisée par des coachs et chercheurs en physiologie de l'exercice. Derrière la mode, c'est en réalité une méthode d'entraînement utilisée depuis longtemps par les coureurs de fond de haut niveau.</p>
+
+    <h2>C'est quoi la zone 2 ?</h2>
+    <p>La zone 2 correspond à une intensité d'effort basse, généralement estimée entre 60 et 70% de ta fréquence cardiaque maximale. C'est l'intensité de "l'endurance fondamentale" (EF) : un rythme où tu peux tenir une conversation complète sans être essoufflé, où l'effort te semble presque trop facile. À noter : il existe plusieurs méthodes de calcul (simple % de la FC max, ou méthode de Karvonen basée sur ta réserve cardiaque), qui peuvent donner des résultats différents — le calculateur ci-dessous te montre les deux.</p>
+
+    <h2>Pourquoi cette zone est si importante</h2>
+    <p>À cette intensité, ton corps utilise principalement les graisses comme carburant plutôt que le glycogène (les réserves de sucre), et développe ta capacité aérobie : plus de mitochondries, un cœur plus efficace, une meilleure endurance de fond. C'est la base sur laquelle tout le reste de ta préparation s'appuie — sans elle, le travail plus intense (fractionné, tempo) a moins d'impact.</p>
+
+    <h2>L'erreur la plus fréquente</h2>
+    <p>La plupart des coureurs, notamment débutants, courent leurs sorties "faciles" trop vite, dans une zone intermédiaire inconfortable qui n'apporte ni les bénéfices de la zone 2 ni ceux d'un vrai travail intense. Beaucoup de coachs estiment que 70 à 80% du volume d'entraînement d'un coureur devrait se faire en zone 2, même chez les coureurs confirmés.</p>
+
+    <div class="calc-card">
+      <h3>Calcule ta zone 2</h3>
+      <p class="sub">Tout est calculé directement dans ton navigateur, rien n'est envoyé ni conservé.</p>
+
+      <form id="zone2Form">
+        <div class="calc-row">
+          <div class="calc-field">
+            <label for="z2age">Ton âge</label>
+            <input type="number" id="z2age" min="10" max="100" placeholder="Ex : 34" required>
+          </div>
+          <div class="calc-field">
+            <label for="z2resting">FC de repos <span style="font-weight:400;color:var(--slate-light);">(optionnel)</span></label>
+            <input type="number" id="z2resting" min="30" max="120" placeholder="Ex : 58">
+            <p class="hint">Mesurée au réveil, avant de te lever. Améliore la précision du calcul.</p>
+          </div>
+        </div>
+        <div class="calc-field" style="margin-bottom:20px;">
+          <label for="z2max">FC max connue <span style="font-weight:400;color:var(--slate-light);">(optionnel, si mesurée lors d'un test d'effort)</span></label>
+          <input type="number" id="z2max" min="120" max="230" placeholder="Laisse vide pour une estimation">
+        </div>
+        <button type="submit" class="btn btn-primary">Calculer ma zone 2</button>
+      </form>
+
+      <div class="calc-result" id="z2result">
+        <div class="range" id="z2rangeValue">—</div>
+        <div id="z2altBlock" style="display:none; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);">
+          <p style="font-size:0.8rem; color:var(--slate-light); text-transform:uppercase; font-family:var(--mono); letter-spacing:0.05em; margin-bottom:6px;">Méthode alternative (Karvonen)</p>
+          <div style="font-family:var(--mono); font-size:1.3rem; font-weight:600; color:var(--ink-soft);" id="z2altRange">—</div>
+        </div>
+        <p class="method" id="z2method"></p>
+      </div>
+    </div>
+
+    <h2>Comment utiliser ce résultat</h2>
+    <p>Cette fourchette est ta cible pour tes sorties faciles et tes sorties longues. Si tu n'as pas de cardiofréquencemètre sous la main, le "test de la conversation" reste un bon repère : tu dois pouvoir parler sans être essoufflé. Si tu dois hacher tes phrases pour respirer, ralentis.</p>
+
+    <h2>Une limite à connaître</h2>
+    <p>Ces formules restent des estimations, en particulier celle basée uniquement sur l'âge. Un test d'effort en laboratoire donne une mesure bien plus précise de ta FC max réelle et de tes seuils. Si tu as des antécédents cardiaques ou une condition médicale particulière, demande l'avis d'un médecin avant de t'entraîner en te basant sur ta fréquence cardiaque.</p>
+
+    <div class="center mt-lg">
+      <a href="plan.html" class="btn btn-primary">Créer mon plan avec mes allures</a>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="footer-top">
+      <div>
+        <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
+      </div>
+      <div class="footer-links">
+        <div>
+          <h4>Outil</h4>
+          <ul>
+            <li><a href="plan.html">Créer mon plan</a></li>
+            <li><a href="zone-2.html">Calculer ma zone 2</a></li>
+            <li><a href="relever-un-defi.html">Relève un défi</a></li>
+            <li><a href="debuter-course-a-pied.html">Guide débutant</a></li>
+            <li><a href="preparer-un-10km.html">Préparer un 10 km</a></li>
+            <li><a href="essoufflement-course-a-pied.html">Éviter l'essoufflement</a></li>
+            <li><a href="points-de-cote.html">Éviter les points de côté</a></li>
+            <li><a href="courir-apres-50-ans.html">Courir après 50 ans</a></li>
+            <li><a href="courir-en-surpoids.html">Courir en surpoids</a></li>
+            <li><a href="comment-ca-marche.html">Comment ça marche</a></li>
+            <li><a href="faq.html">FAQ</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Informations</h4>
+          <ul>
+            <li><a href="a-propos.html">À propos</a></li>
+            <li><a href="mentions-legales.html">Mentions légales</a></li>
+            <li><a href="confidentialite.html">Confidentialité</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Elanrun</span>
+      <span>Fait avec Cloudflare — Savoie, France</span>
+    </div>
+  </div>
+</footer>
+<script src="js/main.js"></script>
+<script src="js/zone2-calculator.js"></script>
+</body>
+</html>
