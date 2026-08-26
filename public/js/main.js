@@ -17,3 +17,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// Menu déroulant navigation (clic pour mobile/tactile, survol pour desktop via CSS)
+document.querySelectorAll('.nav-dropdown-label').forEach(function(label){
+  label.addEventListener('click', function(e){
+    e.stopPropagation();
+    const parent = label.closest('.nav-dropdown');
+    document.querySelectorAll('.nav-dropdown').forEach(function(d){
+      if (d !== parent) d.classList.remove('open');
+    });
+    parent.classList.toggle('open');
+  });
+});
+document.addEventListener('click', function(){
+  document.querySelectorAll('.nav-dropdown').forEach(function(d){ d.classList.remove('open'); });
+});

@@ -676,3 +676,31 @@ input[type="date"]:focus, input[type="number"]:focus, input[type="text"]:focus, 
   width:100%;
   border:none;
 }
+
+/* ===== Menu déroulant navigation ===== */
+.nav-dropdown{ position:relative; }
+.nav-dropdown-label{ cursor:pointer; }
+.nav-dropdown-menu{
+  display:none;
+  position:absolute;
+  top:100%;
+  left:0;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:8px 0;
+  min-width:220px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.08);
+  z-index:100;
+}
+.nav-dropdown-menu a{
+  display:block;
+  padding:9px 16px;
+  white-space:nowrap;
+  color:inherit;
+  text-decoration:none;
+  font-size:0.9rem;
+}
+.nav-dropdown-menu a:hover{ background:var(--paper-dim); }
+.nav-dropdown:hover .nav-dropdown-menu{ display:block; }
+.nav-dropdown.open .nav-dropdown-menu{ display:block; }
