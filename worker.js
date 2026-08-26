@@ -143,13 +143,9 @@ async function handleConnect(env) {
 }
 
 async function handleCallback(url, env) {
-  return new Response('DEBUG params recus: ' + url.search, { status: 200 });
-}
-
-async function handleCallbackReal(url, env) {
   try {
     const code = url.searchParams.get('code');
-    if (!code) return Response.redirect(url.origin + '/strava.html?error=1', 302);
+    if (!code) return new Response('DEBUG: pas de code recu. params=' + url.search, { status: 200 });
 
     const tokenData = await exchangeCodeForToken(code, env);
     if (!tokenData.access_token) {
