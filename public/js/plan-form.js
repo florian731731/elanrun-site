@@ -97,9 +97,6 @@
     showStep(1);
   });
 
-  document.getElementById('stravaBtn').addEventListener('click', () => {
-    document.getElementById('stravaToast').classList.add('show');
-  });
 
   let currentPlan = null;
   document.getElementById('icsBtn').addEventListener('click', () => {

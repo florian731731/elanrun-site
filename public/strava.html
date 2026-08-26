@@ -167,6 +167,10 @@
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
   }
+  function fmtDateFr(iso){
+    var parts = iso.split('-');
+    return parts[2] + '/' + parts[1] + '/' + parts[0];
+  }
   function renderDashboard(data){
     document.getElementById('dashboardState').style.display = 'block';
     document.getElementById('dashSub').textContent = data.totalRuns + ' sorties analysées sur la période récente.';
@@ -204,7 +208,7 @@
         html += '<div style="padding:14px 0;border-top:1px solid var(--line);">';
         html += '<div style="font-family:var(--mono);font-weight:700;font-size:0.85rem;margin-bottom:8px;">Semaine ' + week.number + '</div>';
         week.sessions.forEach(function(s){
-          html += '<div class="week-row" style="padding:6px 0;"><span>' + s.label + ' — ' + s.date + '</span><span>' + (statusLabel[s.status] || '') + '</span></div>';
+          html += '<div class="week-row" style="padding:6px 0;"><span>' + s.label + ' — ' + fmtDateFr(s.date) + '</span><span>' + (statusLabel[s.status] || '') + '</span></div>';
         });
         html += '</div>';
       });
