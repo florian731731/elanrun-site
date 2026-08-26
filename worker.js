@@ -148,7 +148,9 @@ async function handleCallback(url, env) {
     if (!code) return Response.redirect(url.origin + '/strava.html?error=1', 302);
 
     const tokenData = await exchangeCodeForToken(code, env);
-    if (!tokenData.access_token) return Response.redirect(url.origin + '/strava.html?error=1', 302);
+    if (!tokenData.access_token) {
+      return new Response('DEBUG Strava response: ' + JSON.stringify(tokenData), { status: 200 });
+    }
 
     const sessionId = crypto.randomUUID();
     await env.DB.prepare(
