@@ -208,7 +208,10 @@
         html += '<div style="padding:14px 0;border-top:1px solid var(--line);">';
         html += '<div style="font-family:var(--mono);font-weight:700;font-size:0.85rem;margin-bottom:8px;">Semaine ' + week.number + '</div>';
         week.sessions.forEach(function(s){
-          html += '<div class="week-row" style="padding:6px 0;"><span>' + s.label + ' — ' + fmtDateFr(s.date) + '</span><span>' + (statusLabel[s.status] || '') + '</span></div>';
+          html += '<div style="padding:6px 0;border-top:1px solid var(--line);">';
+          html += '<div class="week-row" style="padding:0;"><span><strong>' + s.label + '</strong> — ' + fmtDateFr(s.date) + '</span><span>' + (statusLabel[s.status] || '') + '</span></div>';
+          if (s.desc){ html += '<p style="font-size:0.82rem;color:var(--slate-light);margin-top:4px;">' + s.desc + '</p>'; }
+          html += '</div>';
         });
         html += '</div>';
       });
