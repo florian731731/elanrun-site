@@ -143,29 +143,33 @@ async function handleConnect(env) {
 }
 
 async function handleCallback(url, env) {
-  const code = url.searchParams.get('code');
-  if (!code) return Response.redirect('/strava.html?error=1', 302);
+  try {
+    const code = url.searchParams.get('code');
+    if (!code) return Response.redirect(url.origin + '/strava.html?error=1', 302);
 
-  const tokenData = await exchangeCodeForToken(code, env);
-  if (!tokenData.access_token) return Response.redirect('/strava.html?error=1', 302);
+    const tokenData = await exchangeCodeForToken(code, env);
+    if (!tokenData.access_token) return Response.redirect(url.origin + '/strava.html?error=1', 302);
 
-  const sessionId = crypto.randomUUID();
-  await env.DB.prepare(
-    `INSERT INTO strava_users (session_id, athlete_id, access_token, refresh_token, expires_at, created_at)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).bind(
-    sessionId,
-    tokenData.athlete?.id || 0,
-    tokenData.access_token,
-    tokenData.refresh_token,
-    tokenData.expires_at,
-    Math.floor(Date.now() / 1000)
-  ).run();
+    const sessionId = crypto.randomUUID();
+    await env.DB.prepare(
+      `INSERT INTO strava_users (session_id, athlete_id, access_token, refresh_token, expires_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).bind(
+      sessionId,
+      tokenData.athlete?.id || 0,
+      tokenData.access_token,
+      tokenData.refresh_token,
+      tokenData.expires_at,
+      Math.floor(Date.now() / 1000)
+    ).run();
 
-  const headers = new Headers();
-  headers.set('Location', '/strava.html?connected=1');
-  headers.append('Set-Cookie', `elanrun_session=${sessionId}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=7776000`);
-  return new Response(null, { status: 302, headers });
+    const headers = new Headers();
+    headers.set('Location', url.origin + '/strava.html?connected=1');
+    headers.append('Set-Cookie', `elanrun_session=${sessionId}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=7776000`);
+    return new Response(null, { status: 302, headers });
+  } catch (err) {
+    return new Response('Erreur callback Strava: ' + (err && err.message ? err.message : String(err)), { status: 500 });
+  }
 }
 
 async function handleDashboard(request, env) {
