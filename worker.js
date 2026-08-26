@@ -18,29 +18,31 @@ function jsonResponse(data, status = 200) {
 }
 
 async function exchangeCodeForToken(code, env) {
+  const body = new URLSearchParams();
+  body.set('client_id', env.STRAVA_CLIENT_ID);
+  body.set('client_secret', env.STRAVA_CLIENT_SECRET);
+  body.set('code', code);
+  body.set('grant_type', 'authorization_code');
+
   const res = await fetch('https://www.strava.com/oauth/token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: env.STRAVA_CLIENT_ID,
-      client_secret: env.STRAVA_CLIENT_SECRET,
-      code,
-      grant_type: 'authorization_code'
-    })
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString()
   });
   return res.json();
 }
 
 async function refreshToken(refresh_token, env) {
+  const body = new URLSearchParams();
+  body.set('client_id', env.STRAVA_CLIENT_ID);
+  body.set('client_secret', env.STRAVA_CLIENT_SECRET);
+  body.set('refresh_token', refresh_token);
+  body.set('grant_type', 'refresh_token');
+
   const res = await fetch('https://www.strava.com/oauth/token', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: env.STRAVA_CLIENT_ID,
-      client_secret: env.STRAVA_CLIENT_SECRET,
-      refresh_token,
-      grant_type: 'refresh_token'
-    })
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: body.toString()
   });
   return res.json();
 }
@@ -145,11 +147,12 @@ async function handleConnect(env) {
 async function handleCallback(url, env) {
   try {
     const code = url.searchParams.get('code');
-    if (!code) return new Response('DEBUG: pas de code recu. params=' + url.search, { status: 200 });
+    if (!code) return Response.redirect(url.origin + '/strava.html?error=1', 302);
 
     const tokenData = await exchangeCodeForToken(code, env);
     if (!tokenData.access_token) {
-      return new Response('DEBUG Strava response: ' + JSON.stringify(tokenData), { status: 200 });
+      const secretInfo = env.STRAVA_CLIENT_SECRET ? ('longueur=' + env.STRAVA_CLIENT_SECRET.length) : 'ABSENT';
+      return new Response('DEBUG Strava response: ' + JSON.stringify(tokenData) + ' | client_id=' + env.STRAVA_CLIENT_ID + ' | secret=' + secretInfo, { status: 200 });
     }
 
     const sessionId = crypto.randomUUID();

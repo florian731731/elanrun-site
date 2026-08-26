@@ -69,6 +69,10 @@
           <label for="ageInput">Ton âge</label>
           <input type="number" id="ageInput" min="10" max="100" placeholder="Ex : 34">
         </div>
+        <div class="calc-field" style="margin-bottom:20px;">
+          <label for="maxHrInput">Ta FC max connue <span style="font-weight:400;color:var(--slate-light);">(optionnel, si mesurée lors d'un test d'effort — améliore la précision)</span></label>
+          <input type="number" id="maxHrInput" min="120" max="230" placeholder="Laisse vide pour une estimation par l'âge">
+        </div>
         <button type="button" class="btn btn-primary" id="ageSubmitBtn">Valider</button>
       </div>
     </div>
@@ -155,10 +159,11 @@
       document.getElementById('ageState').style.display = 'block';
       document.getElementById('ageSubmitBtn').addEventListener('click', async () => {
         const age = document.getElementById('ageInput').value;
+        const maxHr = document.getElementById('maxHrInput').value;
         await fetch('/api/strava/set-age', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ age })
+          body: JSON.stringify({ age, maxHr })
         });
         location.reload();
       });
