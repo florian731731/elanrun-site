@@ -1,0 +1,6 @@
+.git
+.wrangler
+node_modules
+*.log
+schema.sql
+wrangler.toml
