@@ -236,6 +236,40 @@ async function fetchAllActivities(accessToken) {
   return all;
 }
 
+function commentForActivity(a, estimatedMax, maxDistanceSoFar) {
+  const parts = [];
+
+  if (maxDistanceSoFar > 0 && a.distanceKm >= maxDistanceSoFar) {
+    parts.push("Ta sortie la plus longue de la période ! 👏");
+  }
+
+  if (estimatedMax && a.avgHr) {
+    const z2High = Math.round(0.7 * estimatedMax);
+    const tempoHigh = Math.round(0.88 * estimatedMax);
+    if (a.avgHr <= z2High) {
+      parts.push("Séance bien maîtrisée en endurance fondamentale.");
+    } else if (a.avgHr <= tempoHigh) {
+      parts.push("Effort soutenu, plutôt de l'ordre du tempo.");
+    } else {
+      parts.push("Grosse intensité sur cette sortie, proche de tes limites.");
+    }
+  }
+
+  if (a.elevationGain && a.distanceKm > 0) {
+    const dPlusPerKm = a.elevationGain / a.distanceKm;
+    if (dPlusPerKm > 15) parts.push("Un profil bien vallonné, du beau travail en côtes.");
+  }
+
+  if (a.movingMinutes && a.distanceKm > 0) {
+    const paceMinPerKm = a.movingMinutes / a.distanceKm;
+    const paceMin = Math.floor(paceMinPerKm);
+    const paceSec = Math.round((paceMinPerKm - paceMin) * 60);
+    parts.push(`Allure moyenne : ${paceMin}:${String(paceSec).padStart(2, '0')}/km.`);
+  }
+
+  return parts.join(' ');
+}
+
 async function handleDashboard(request, env) {
   const sessionId = getCookie(request, 'elanrun_session');
   if (!sessionId) return jsonResponse({ connected: false }, 200);
@@ -246,19 +280,26 @@ async function handleDashboard(request, env) {
   const activities = await fetchAllActivities(tokenRow.access_token);
   const analysis = analyzeActivities(activities, tokenRow.age, tokenRow.max_hr);
 
-  const recentActivities = activities
-    .filter(a => a.type === 'Run')
+  const allRuns = activities.filter(a => a.type === 'Run');
+  const maxDistanceSoFar = allRuns.length ? Math.max(...allRuns.map(a => a.distance / 1000)) : 0;
+  const estimatedMax = tokenRow.max_hr || (tokenRow.age ? Math.round(208 - 0.7 * tokenRow.age) : null);
+
+  const recentActivities = allRuns
     .slice(0, 10)
-    .map(a => ({
-      id: a.id,
-      name: a.name,
-      date: String(a.start_date_local).slice(0, 10),
-      distanceKm: Math.round((a.distance / 1000) * 10) / 10,
-      movingMinutes: Math.round(a.moving_time / 60),
-      elevationGain: Math.round(a.total_elevation_gain || 0),
-      avgHr: a.average_heartrate ? Math.round(a.average_heartrate) : null,
-      polyline: a.map && a.map.summary_polyline ? a.map.summary_polyline : null
-    }));
+    .map(a => {
+      const item = {
+        id: a.id,
+        name: a.name,
+        date: String(a.start_date_local).slice(0, 10),
+        distanceKm: Math.round((a.distance / 1000) * 10) / 10,
+        movingMinutes: Math.round(a.moving_time / 60),
+        elevationGain: Math.round(a.total_elevation_gain || 0),
+        avgHr: a.average_heartrate ? Math.round(a.average_heartrate) : null,
+        polyline: a.map && a.map.summary_polyline ? a.map.summary_polyline : null
+      };
+      item.comment = commentForActivity(item, estimatedMax, maxDistanceSoFar);
+      return item;
+    });
 
   const planRow = await env.DB.prepare(
     'SELECT plan_json FROM user_plans WHERE session_id = ?'

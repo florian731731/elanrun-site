@@ -268,6 +268,7 @@
       html += '<div class="activity-card">';
       html += '<div style="font-weight:700;">' + a.name + '</div>';
       html += '<div class="activity-stats">' + fmtDateFr(a.date) + ' · ' + a.distanceKm + ' km · ' + a.movingMinutes + ' min' + (a.elevationGain ? (' · D+' + a.elevationGain + 'm') : '') + (a.avgHr ? (' · ' + a.avgHr + ' bpm moy.') : '') + '</div>';
+      if (a.comment){ html += '<p style="font-size:0.88rem;color:var(--ink-soft);margin-top:8px;font-style:italic;">💬 ' + a.comment + '</p>'; }
       if (a.polyline){ html += '<div class="activity-map" id="map-' + i + '"></div>'; }
       html += '</div>';
     });
