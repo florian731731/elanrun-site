@@ -21,7 +21,6 @@
 </style>
 </head>
 <body>
-
 <header class="site-header">
   <div class="wrap">
     <a href="index.html" class="logo"><span class="dot"></span>ELANRUN</a>
@@ -39,28 +38,23 @@
     </div>
   </div>
 </header>
-
 <section class="page-hero">
   <div class="wrap">
     <div class="eyebrow">Elanrun Pro</div>
     <h1>Mon suivi Strava</h1>
   </div>
 </section>
-
 <section>
   <div class="wrap strava-card">
-
     <div id="loadingState" class="connect-box">
       <p>Chargement...</p>
     </div>
-
     <div id="connectState" class="connect-box" style="display:none;">
       <h3 style="text-transform:none;font-family:var(--body);font-weight:800;font-size:1.4rem;margin-bottom:14px;">Connecte ton compte Strava</h3>
       <p style="margin-bottom:28px;max-width:44ch;margin-left:auto;margin-right:auto;">On lit uniquement tes activités pour analyser ton entraînement. On ne publie et ne modifie jamais rien sur ton compte.</p>
       <a href="/auth/strava/connect" class="btn btn-primary">Connecter Strava</a>
       <p style="margin-top:24px;font-size:0.85rem;color:var(--slate-light);">Note : pendant la phase de test, seul le compte Strava du créateur du site peut se connecter.</p>
     </div>
-
     <div id="ageState" style="display:none;">
       <div class="calc-card">
         <h3>Une dernière info</h3>
@@ -70,40 +64,43 @@
           <input type="number" id="ageInput" min="10" max="100" placeholder="Ex : 34">
         </div>
         <div class="calc-field" style="margin-bottom:20px;">
-          <label for="maxHrInput">Ta FC max connue <span style="font-weight:400;color:var(--slate-light);">(optionnel, si mesurée lors d'un test d'effort — améliore la précision)</span></label>
+          <label for="maxHrInput">Ta FC max connue <span style="font-weight:400;color:var(--slate-light);">(optionnel)</span></label>
           <input type="number" id="maxHrInput" min="120" max="230" placeholder="Laisse vide pour une estimation par l'âge">
         </div>
         <button type="button" class="btn btn-primary" id="ageSubmitBtn">Valider</button>
       </div>
     </div>
-
     <div id="dashboardState" style="display:none;">
       <div class="result-summary" style="margin-bottom:24px;">
         <div class="eyebrow">Connecté</div>
         <h2 id="dashTitle">Ton activité récente</h2>
         <p id="dashSub"></p>
       </div>
-
       <div id="insightsContainer"></div>
-
+      <div id="planComparisonCard" class="calc-card" style="display:none;">
+        <h3>Ton plan vs tes séances réelles</h3>
+        <p class="sub" id="adherenceText"></p>
+        <div id="planWeeksList"></div>
+      </div>
+      <div id="noPlanCard" class="calc-card" style="display:none;">
+        <h3>Pas encore de plan lié</h3>
+        <p class="sub">Génère un plan sur Elanrun pour voir ici la comparaison entre ce qui est prévu et ce que tu fais vraiment.</p>
+        <a href="/plan.html" class="btn btn-primary btn-sm">Créer mon plan</a>
+      </div>
       <div class="calc-card">
         <h3>Volume hebdomadaire (8 dernières semaines)</h3>
         <div id="weeksList"></div>
       </div>
-
       <div class="center mt-lg">
         <a href="/auth/strava/disconnect" class="btn btn-ghost btn-sm">Déconnecter Strava</a>
       </div>
     </div>
-
     <div id="errorState" class="connect-box" style="display:none;">
       <p>Un souci est survenu pendant la connexion à Strava. Réessaie dans un instant.</p>
       <a href="/auth/strava/connect" class="btn btn-primary" style="margin-top:20px;">Réessayer</a>
     </div>
-
   </div>
 </section>
-
 <footer class="site-footer">
   <div class="wrap">
     <div class="footer-top">
@@ -134,7 +131,6 @@
     </div>
   </div>
 </footer>
-
 <script src="js/main.js"></script>
 <script>
 (async function(){
@@ -144,17 +140,14 @@
     document.getElementById('errorState').style.display = 'block';
     return;
   }
-
   try {
     const res = await fetch('/api/strava/dashboard');
     const data = await res.json();
     document.getElementById('loadingState').style.display = 'none';
-
     if (!data.connected){
       document.getElementById('connectState').style.display = 'block';
       return;
     }
-
     if (!data.age){
       document.getElementById('ageState').style.display = 'block';
       document.getElementById('ageSubmitBtn').addEventListener('click', async () => {
@@ -169,17 +162,14 @@
       });
       return;
     }
-
     renderDashboard(data);
   } catch(e){
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
   }
-
   function renderDashboard(data){
     document.getElementById('dashboardState').style.display = 'block';
-    document.getElementById('dashSub').textContent = `${data.totalRuns} sorties analysées sur la période récente.`;
-
+    document.getElementById('dashSub').textContent = data.totalRuns + ' sorties analysées sur la période récente.';
     const insights = document.getElementById('insightsContainer');
     insights.innerHTML = '';
     if (data.volumeAlert){
@@ -200,14 +190,35 @@
       box.textContent = "Continue comme ça ! Reviens régulièrement pour voir tes analyses évoluer.";
       insights.appendChild(box);
     }
-
+    const statusLabel = { done: '✅ Fait', missed: '❌ Manquée', upcoming: '🕒 À venir' };
+    if (data.planComparison){
+      document.getElementById('planComparisonCard').style.display = 'block';
+      document.getElementById('noPlanCard').style.display = 'none';
+      const pc = data.planComparison;
+      document.getElementById('adherenceText').textContent = pc.adherenceRate !== null
+        ? (pc.adherenceRate + '% des séances prévues ont été faites (' + pc.doneCount + ' faites, ' + pc.missedCount + ' manquées).')
+        : 'Pas encore assez de séances passées pour calculer un taux de suivi.';
+      const planWeeksList = document.getElementById('planWeeksList');
+      let html = '';
+      (pc.weeks || []).forEach(function(week){
+        html += '<div style="padding:14px 0;border-top:1px solid var(--line);">';
+        html += '<div style="font-family:var(--mono);font-weight:700;font-size:0.85rem;margin-bottom:8px;">Semaine ' + week.number + '</div>';
+        week.sessions.forEach(function(s){
+          html += '<div class="week-row" style="padding:6px 0;"><span>' + s.label + ' — ' + s.date + '</span><span>' + (statusLabel[s.status] || '') + '</span></div>';
+        });
+        html += '</div>';
+      });
+      planWeeksList.innerHTML = html || '<p style="color:var(--slate-light);font-size:0.9rem;">Aucune séance dans ce plan.</p>';
+    } else {
+      document.getElementById('planComparisonCard').style.display = 'none';
+      document.getElementById('noPlanCard').style.display = 'block';
+    }
     const weeksList = document.getElementById('weeksList');
-    weeksList.innerHTML = (data.weeklyData || []).slice().reverse().map(w => `
-      <div class="week-row">
-        <span>${w.week}</span>
-        <span>${w.distanceKm} km · ${w.runs} sortie${w.runs > 1 ? 's' : ''}${w.avgHr ? ' · ' + w.avgHr + ' bpm moy.' : ''}</span>
-      </div>
-    `).join('') || '<p style="color:var(--slate-light);font-size:0.9rem;">Pas encore assez de données.</p>';
+    let wHtml = '';
+    (data.weeklyData || []).slice().reverse().forEach(function(w){
+      wHtml += '<div class="week-row"><span>' + w.week + '</span><span>' + w.distanceKm + ' km · ' + w.runs + ' sortie' + (w.runs > 1 ? 's' : '') + (w.avgHr ? (' · ' + w.avgHr + ' bpm moy.') : '') + '</span></div>';
+    });
+    weeksList.innerHTML = wHtml || '<p style="color:var(--slate-light);font-size:0.9rem;">Pas encore assez de données.</p>';
   }
 })();
 </script>

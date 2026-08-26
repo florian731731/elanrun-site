@@ -174,6 +174,53 @@ async function handleCallback(url, env) {
   }
 }
 
+function comparePlanToActivities(plan, activities) {
+  const runDates = new Set();
+  activities
+    .filter(a => a.type === 'Run')
+    .forEach(a => runDates.add(String(a.start_date_local).slice(0, 10)));
+
+  const today = new Date().toISOString().slice(0, 10);
+  let doneCount = 0;
+  let missedCount = 0;
+
+  const weeks = (plan.weeks || []).map(week => {
+    const sessions = (week.sessions || [])
+      .filter(s => s.type !== 'repos')
+      .map(s => {
+        let status;
+        if (s.date > today) {
+          status = 'upcoming';
+        } else if (runDates.has(s.date)) {
+          status = 'done';
+          doneCount++;
+        } else {
+          status = 'missed';
+          missedCount++;
+        }
+        return { ...s, status };
+      });
+    return { number: week.number, sessions };
+  });
+
+  const totalPast = doneCount + missedCount;
+  const adherenceRate = totalPast > 0 ? Math.round((doneCount / totalPast) * 100) : null;
+
+  return { weeks, adherenceRate, doneCount, missedCount };
+}
+
+async function handlePlanSave(request, env) {
+  const sessionId = getCookie(request, 'elanrun_session');
+  if (!sessionId) return jsonResponse({ ok: false }, 200);
+
+  const plan = await request.json();
+  await env.DB.prepare(
+    'INSERT INTO user_plans (session_id, plan_json, created_at) VALUES (?, ?, ?) ON CONFLICT(session_id) DO UPDATE SET plan_json = excluded.plan_json, created_at = excluded.created_at'
+  ).bind(sessionId, JSON.stringify(plan), Math.floor(Date.now() / 1000)).run();
+
+  return jsonResponse({ ok: true });
+}
+
 async function handleDashboard(request, env) {
   const sessionId = getCookie(request, 'elanrun_session');
   if (!sessionId) return jsonResponse({ connected: false }, 200);
@@ -190,7 +237,17 @@ async function handleDashboard(request, env) {
   const activities = await actRes.json();
   const analysis = analyzeActivities(activities, tokenRow.age, tokenRow.max_hr);
 
-  return jsonResponse({ connected: true, age: tokenRow.age || null, maxHr: tokenRow.max_hr || null, ...analysis });
+  const planRow = await env.DB.prepare(
+    'SELECT plan_json FROM user_plans WHERE session_id = ?'
+  ).bind(sessionId).first();
+
+  let planComparison = null;
+  if (planRow) {
+    const plan = JSON.parse(planRow.plan_json);
+    planComparison = comparePlanToActivities(plan, activities);
+  }
+
+  return jsonResponse({ connected: true, age: tokenRow.age || null, maxHr: tokenRow.max_hr || null, planComparison, ...analysis });
 }
 
 async function handleSetAge(request, env) {
@@ -226,6 +283,7 @@ export default {
     if (url.pathname === '/auth/strava/disconnect') return handleDisconnect(request, env);
     if (url.pathname === '/api/strava/dashboard') return handleDashboard(request, env);
     if (url.pathname === '/api/strava/set-age' && request.method === 'POST') return handleSetAge(request, env);
+    if (url.pathname === '/api/plan/save' && request.method === 'POST') return handlePlanSave(request, env);
 
     return env.ASSETS.fetch(request);
   }

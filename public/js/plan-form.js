@@ -118,6 +118,7 @@
 
   function renderResults(plan){
     currentPlan = plan;
+    fetch("/api/plan/save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(plan) }).catch(function(){});
     const { meta } = plan;
     const introEl = document.getElementById('resultIntro');
     const subEl = document.getElementById('resultSub');
