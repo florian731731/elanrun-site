@@ -76,7 +76,7 @@ function weekKey(date) {
   return d.toISOString().slice(0, 10);
 }
 
-function analyzeActivities(activities, age) {
+function analyzeActivities(activities, age, maxHr) {
   const runs = activities.filter(a => a.type === 'Run');
 
   const weeks = {};
@@ -114,8 +114,8 @@ function analyzeActivities(activities, age) {
   }
 
   let zone2Insight = null;
-  if (age) {
-    const estimatedMax = Math.round(208 - 0.7 * age);
+  const estimatedMax = maxHr || (age ? Math.round(208 - 0.7 * age) : null);
+  if (estimatedMax) {
     const z2Low = Math.round(0.6 * estimatedMax);
     const z2High = Math.round(0.7 * estimatedMax);
     const runsWithHr = runs.filter(r => r.average_heartrate);
@@ -150,10 +150,7 @@ async function handleCallback(url, env) {
     if (!code) return Response.redirect(url.origin + '/strava.html?error=1', 302);
 
     const tokenData = await exchangeCodeForToken(code, env);
-    if (!tokenData.access_token) {
-      const secretInfo = env.STRAVA_CLIENT_SECRET ? ('longueur=' + env.STRAVA_CLIENT_SECRET.length) : 'ABSENT';
-      return new Response('DEBUG Strava response: ' + JSON.stringify(tokenData) + ' | client_id=' + env.STRAVA_CLIENT_ID + ' | secret=' + secretInfo, { status: 200 });
-    }
+    if (!tokenData.access_token) return Response.redirect(url.origin + '/strava.html?error=1', 302);
 
     const sessionId = crypto.randomUUID();
     await env.DB.prepare(
@@ -191,9 +188,9 @@ async function handleDashboard(request, env) {
   if (!actRes.ok) return jsonResponse({ connected: true, error: 'strava_api_error' }, 200);
 
   const activities = await actRes.json();
-  const analysis = analyzeActivities(activities, tokenRow.age);
+  const analysis = analyzeActivities(activities, tokenRow.age, tokenRow.max_hr);
 
-  return jsonResponse({ connected: true, age: tokenRow.age || null, ...analysis });
+  return jsonResponse({ connected: true, age: tokenRow.age || null, maxHr: tokenRow.max_hr || null, ...analysis });
 }
 
 async function handleSetAge(request, env) {
@@ -202,9 +199,10 @@ async function handleSetAge(request, env) {
 
   const body = await request.json();
   const age = parseInt(body.age, 10);
+  const maxHr = body.maxHr ? parseInt(body.maxHr, 10) : null;
   if (!age || age < 10 || age > 100) return jsonResponse({ ok: false }, 400);
 
-  await env.DB.prepare('UPDATE strava_users SET age = ? WHERE session_id = ?').bind(age, sessionId).run();
+  await env.DB.prepare('UPDATE strava_users SET age = ?, max_hr = ? WHERE session_id = ?').bind(age, maxHr, sessionId).run();
   return jsonResponse({ ok: true });
 }
 
