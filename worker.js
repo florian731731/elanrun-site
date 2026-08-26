@@ -132,7 +132,7 @@ function analyzeActivities(activities, age, maxHr) {
 
   return {
     totalRuns: runs.length,
-    weeklyData: weeklyData.slice(-8),
+    weeklyData: weeklyData.slice(-26),
     volumeAlert,
     zone2Insight
   };
@@ -221,6 +221,21 @@ async function handlePlanSave(request, env) {
   return jsonResponse({ ok: true });
 }
 
+async function fetchAllActivities(accessToken) {
+  let all = [];
+  const perPage = 100;
+  for (let page = 1; page <= 6; page++) {
+    const res = await fetch(`https://www.strava.com/api/v3/athlete/activities?per_page=${perPage}&page=${page}`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!res.ok) break;
+    const batch = await res.json();
+    all = all.concat(batch);
+    if (batch.length < perPage) break;
+  }
+  return all;
+}
+
 async function handleDashboard(request, env) {
   const sessionId = getCookie(request, 'elanrun_session');
   if (!sessionId) return jsonResponse({ connected: false }, 200);
@@ -228,14 +243,22 @@ async function handleDashboard(request, env) {
   const tokenRow = await getValidAccessToken(sessionId, env);
   if (!tokenRow) return jsonResponse({ connected: false }, 200);
 
-  const actRes = await fetch('https://www.strava.com/api/v3/athlete/activities?per_page=60', {
-    headers: { Authorization: `Bearer ${tokenRow.access_token}` }
-  });
-
-  if (!actRes.ok) return jsonResponse({ connected: true, error: 'strava_api_error' }, 200);
-
-  const activities = await actRes.json();
+  const activities = await fetchAllActivities(tokenRow.access_token);
   const analysis = analyzeActivities(activities, tokenRow.age, tokenRow.max_hr);
+
+  const recentActivities = activities
+    .filter(a => a.type === 'Run')
+    .slice(0, 10)
+    .map(a => ({
+      id: a.id,
+      name: a.name,
+      date: String(a.start_date_local).slice(0, 10),
+      distanceKm: Math.round((a.distance / 1000) * 10) / 10,
+      movingMinutes: Math.round(a.moving_time / 60),
+      elevationGain: Math.round(a.total_elevation_gain || 0),
+      avgHr: a.average_heartrate ? Math.round(a.average_heartrate) : null,
+      polyline: a.map && a.map.summary_polyline ? a.map.summary_polyline : null
+    }));
 
   const planRow = await env.DB.prepare(
     'SELECT plan_json FROM user_plans WHERE session_id = ?'
@@ -247,7 +270,7 @@ async function handleDashboard(request, env) {
     planComparison = comparePlanToActivities(plan, activities);
   }
 
-  return jsonResponse({ connected: true, age: tokenRow.age || null, maxHr: tokenRow.max_hr || null, planComparison, ...analysis });
+  return jsonResponse({ connected: true, age: tokenRow.age || null, maxHr: tokenRow.max_hr || null, planComparison, recentActivities, ...analysis });
 }
 
 async function handleSetAge(request, env) {

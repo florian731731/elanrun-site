@@ -12,12 +12,18 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='16' fill='%230F2530'/%3E%3Ccircle cx='30' cy='30' r='9' fill='%23FF4B33'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   .strava-card{ max-width:640px; margin:0 auto; }
   .week-row{ display:flex; justify-content:space-between; padding:12px 0; border-top:1px solid var(--line); font-family:var(--mono); font-size:0.9rem; }
   .week-row:first-child{ border-top:none; }
   .insight-box{ background:var(--paper-dim); border-left:3px solid var(--effort); padding:16px 18px; margin:16px 0; border-radius:4px; font-size:0.95rem; }
   .connect-box{ text-align:center; padding:60px 20px; }
+  .activity-card{ border-top:1px solid var(--line); padding:16px 0; }
+  .activity-card:first-child{ border-top:none; }
+  .activity-map{ height:160px; border-radius:4px; margin-top:10px; background:var(--paper-dim); }
+  .activity-stats{ font-family:var(--mono); font-size:0.82rem; color:var(--ink-soft); margin-top:6px; }
 </style>
 </head>
 <body>
@@ -88,8 +94,12 @@
         <a href="/plan.html" class="btn btn-primary btn-sm">Créer mon plan</a>
       </div>
       <div class="calc-card">
-        <h3>Volume hebdomadaire (8 dernières semaines)</h3>
+        <h3>Volume hebdomadaire (26 dernières semaines)</h3>
         <div id="weeksList"></div>
+      </div>
+      <div class="calc-card">
+        <h3>Mes dernières sorties</h3>
+        <div id="activitiesList"></div>
       </div>
       <div class="center mt-lg">
         <a href="/auth/strava/disconnect" class="btn btn-ghost btn-sm">Déconnecter Strava</a>
@@ -167,10 +177,26 @@
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
   }
+
   function fmtDateFr(iso){
     var parts = iso.split('-');
     return parts[2] + '/' + parts[1] + '/' + parts[0];
   }
+
+  function decodePolyline(str){
+    var index = 0, lat = 0, lng = 0, coordinates = [];
+    while (index < str.length){
+      var result = 1, shift = 0, b;
+      do { b = str.charCodeAt(index++) - 63 - 1; result += b << shift; shift += 5; } while (b >= 0x1f);
+      lat += (result & 1) ? ~(result >> 1) : (result >> 1);
+      result = 1; shift = 0;
+      do { b = str.charCodeAt(index++) - 63 - 1; result += b << shift; shift += 5; } while (b >= 0x1f);
+      lng += (result & 1) ? ~(result >> 1) : (result >> 1);
+      coordinates.push([lat * 1e-5, lng * 1e-5]);
+    }
+    return coordinates;
+  }
+
   function renderDashboard(data){
     document.getElementById('dashboardState').style.display = 'block';
     document.getElementById('dashSub').textContent = data.totalRuns + ' sorties analysées sur la période récente.';
@@ -211,6 +237,7 @@
           html += '<div style="padding:6px 0;border-top:1px solid var(--line);">';
           html += '<div class="week-row" style="padding:0;"><span><strong>' + s.label + '</strong> — ' + fmtDateFr(s.date) + '</span><span>' + (statusLabel[s.status] || '') + '</span></div>';
           if (s.desc){ html += '<p style="font-size:0.82rem;color:var(--slate-light);margin-top:4px;">' + s.desc + '</p>'; }
+          html += '<p style="font-family:var(--mono);font-size:0.8rem;color:var(--ink-soft);margin-top:6px;">' + s.duration + ' min' + (s.pace ? (' · ' + s.pace + '/km') : '') + '</p>';
           html += '</div>';
         });
         html += '</div>';
@@ -226,6 +253,37 @@
       wHtml += '<div class="week-row"><span>' + w.week + '</span><span>' + w.distanceKm + ' km · ' + w.runs + ' sortie' + (w.runs > 1 ? 's' : '') + (w.avgHr ? (' · ' + w.avgHr + ' bpm moy.') : '') + '</span></div>';
     });
     weeksList.innerHTML = wHtml || '<p style="color:var(--slate-light);font-size:0.9rem;">Pas encore assez de données.</p>';
+
+    renderActivities(data.recentActivities || []);
+  }
+
+  function renderActivities(activities){
+    const container = document.getElementById('activitiesList');
+    if (!activities.length){
+      container.innerHTML = '<p style="color:var(--slate-light);font-size:0.9rem;">Aucune sortie récente trouvée.</p>';
+      return;
+    }
+    let html = '';
+    activities.forEach(function(a, i){
+      html += '<div class="activity-card">';
+      html += '<div style="font-weight:700;">' + a.name + '</div>';
+      html += '<div class="activity-stats">' + fmtDateFr(a.date) + ' · ' + a.distanceKm + ' km · ' + a.movingMinutes + ' min' + (a.elevationGain ? (' · D+' + a.elevationGain + 'm') : '') + (a.avgHr ? (' · ' + a.avgHr + ' bpm moy.') : '') + '</div>';
+      if (a.polyline){ html += '<div class="activity-map" id="map-' + i + '"></div>'; }
+      html += '</div>';
+    });
+    container.innerHTML = html;
+    activities.forEach(function(a, i){
+      if (!a.polyline) return;
+      const coords = decodePolyline(a.polyline);
+      if (!coords.length) return;
+      const map = L.map('map-' + i, { zoomControl: false, attributionControl: true, dragging: false, scrollWheelZoom: false });
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors',
+        maxZoom: 18
+      }).addTo(map);
+      const line = L.polyline(coords, { color: '#FF4B33', weight: 3 }).addTo(map);
+      map.fitBounds(line.getBounds(), { padding: [10, 10] });
+    });
   }
 })();
 </script>
